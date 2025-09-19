@@ -1,0 +1,227 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: foxai_postgres
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES__DB}
+      POSTGRES_USER: ${POSTGRES__USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES__PASSWORD}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+    ports:
+      - "127.0.0.1:${POSTGRES__PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/01-init-db.sql
+    networks:
+      - foxai_network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: foxai_redis
+    env_file:
+      - .env
+    ports:
+      - "${REDIS__PORT}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - foxai_network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  minio:
+    image: minio/minio:latest
+    container_name: foxai_minio
+    env_file:
+      - .env
+    environment:
+      MINIO_ROOT_USER: ${MINIO__USERNAME}
+      MINIO_ROOT_PASSWORD: ${MINIO__PASSWORD}
+      # Không cấu hình MINIO_SERVER_URL để cho phép multiple hosts
+
+    ports:
+      - "0.0.0.0:9000:9000"
+      - "0.0.0.0:9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - foxai_network
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: foxai_qdrant
+    env_file:
+      - .env
+    ports:
+      - "6333:6333"  # Mở 1 cổng duy nhất
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - foxai_network
+    restart: unless-stopped
+    environment:
+      QDRANT__SERVICE__HTTP_PORT: 6333        
+      QDRANT__SERVICE__HTTP_HOST: 0.0.0.0      
+      QDRANT__SERVICE__GRPC_HOST: 0.0.0.0
+      QDRANT__SERVICE__GRPC_PORT: 6334
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: foxai_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - foxai_network
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: foxai_postgres_exporter
+    env_file:
+      - .env
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES__USERNAME}:${POSTGRES__PASSWORD}@postgres:5432/${POSTGRES__DB}?sslmode=disable"
+    ports:
+      - "9187:9187"
+    networks:
+      - foxai_network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: foxai_redis_exporter
+    environment:
+      REDIS_ADDR: "redis://redis:6379"
+    ports:
+      - "9121:9121"
+    networks:
+      - foxai_network
+    restart: unless-stopped
+    depends_on:
+      - redis
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: foxai_grafana
+    env_file:
+      - .env
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: false
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - foxai_network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: foxai_node_exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - foxai_network
+    restart: unless-stopped
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+
+  app:
+    build: .
+    container_name: foxai_app
+    ports:
+      - "4555:4555"
+    depends_on:
+      - postgres
+      - redis
+      - minio
+      - qdrant
+    networks:
+      - foxai_network
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES__HOST: postgres
+      POSTGRES__PORT: 5432
+      REDIS__HOST: redis
+      MINIO__HOST: minio:9000
+      QDRANT__HOST: qdrant
+      QDRANT__PORT: 6333
+      MINIO__PUBLIC_HOST: https://minio:9000/minio
+      MINIO__SSL: false
+      UVICORN_CMD_ARGS: "--proxy-headers --forwarded-allow-ips=*"
+    volumes:
+      - ./src:/app/src
+      - ./src/app/static:/app/src/app/static
+      - ./.env:/app/.env
+    command: >
+      gunicorn src.app.main:app
+      --timeout 3000
+      --workers 4
+      --worker-class uvicorn.workers.UvicornWorker
+      --bind 0.0.0.0:4555
+
+  alembic:
+    image: python:3.11-alpine
+    container_name: foxai_alembic
+    depends_on:
+      - postgres
+    restart: on-failure
+    working_dir: /app
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES__USERNAME}:${POSTGRES__PASSWORD}@postgres:5432/${POSTGRES__DB}
+    volumes:
+      - ./src/alembic:/app/alembic
+      - ./src:/app/src
+      - ./alembic.ini:/app/alembic.ini
+      - ./requirements.txt:/app/requirements.txt
+      - ./.env:/app/.env
+    command: sh -c "pip install --no-cache-dir -r requirements.txt && alembic upgrade head"
+    networks:
+      - foxai_network
+
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  qdrant_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  foxai_network:
+    driver: bridge
