@@ -1,0 +1,216 @@
+.textGenerator {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.title {
+  margin-bottom: var(--spacing-xl);
+  color: var(--text-primary);
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  text-align: center;
+}
+
+.form {
+  margin-bottom: var(--spacing-xl);
+}
+
+.settingsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-lg);
+  align-items: end;
+  padding: var(--spacing-lg);
+  background: var(--background-color);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+}
+
+.settingItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.settingItem label {
+  margin-bottom: var(--spacing-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.maxTokensInput {
+  width: 120px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkboxLabel input {
+  margin-right: var(--spacing-sm);
+  transform: scale(1.2);
+}
+
+.fileList {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--background-color);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.fileList h4 {
+  margin: 0 0 var(--spacing-md) 0;
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+}
+
+.fileItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.fileItem:last-child {
+  border-bottom: none;
+}
+
+.fileItem span {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.removeFileBtn {
+  background: var(--error-color);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.removeFileBtn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: center;
+  margin-top: var(--spacing-xl);
+}
+
+.fileInfo {
+  margin-bottom: var(--spacing-lg);
+}
+
+.fileInfo h3 {
+  margin: 0 0 var(--spacing-md) 0;
+  color: var(--text-primary);
+  font-size: var(--font-size-lg);
+}
+
+.fileResult {
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin: var(--spacing-sm) 0;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  border: 1px solid transparent;
+}
+
+.fileResult.success {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #16a34a;
+}
+
+.fileResult.error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.resultsSection {
+  margin-bottom: var(--spacing-lg);
+}
+
+.resultsSection h3 {
+  margin: 0 0 var(--spacing-lg) 0;
+  color: var(--text-primary);
+  font-size: var(--font-size-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.streamingOutput {
+  position: relative;
+}
+
+.generatedContent {
+  background: var(--background-color);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-md);
+  white-space: pre-wrap;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  max-height: 500px;
+  overflow-y: auto;
+  border: 2px solid var(--border-color);
+  line-height: 1.6;
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.streamingIndicator {
+  text-align: center;
+  padding: var(--spacing-lg);
+  color: var(--primary-color);
+  font-style: italic;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+.usageInfo {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: #eff6ff;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .settingsGrid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .generatedContent {
+    font-size: var(--font-size-xs);
+    padding: var(--spacing-md);
+  }
+}

@@ -1,19 +1,34 @@
 import React, { useState, useRef } from 'react';
 import { useTextToSpeech } from '../hooks/useApi';
+import env from '../config/environment';
+import styles from '../styles/TextToSpeech.module.css';
 
 const TextToSpeech = () => {
   const [text, setText] = useState('');
-  const [voice, setVoice] = useState('alloy');
-  const [speed, setSpeed] = useState(1.0);
-  const [provider, setProvider] = useState('openai');
+  const [voice, setVoice] = useState(env.defaults.tts.voice);
+  const [speed, setSpeed] = useState(env.defaults.tts.speed);
+  const [provider, setProvider] = useState(env.defaults.tts.provider);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Advanced options
+  const [model, setModel] = useState('');
+  const [systemPrompt, setSystemPrompt] = useState('');
+  const [instructions, setInstructions] = useState('');
+  const [responseFormat, setResponseFormat] = useState('mp3');
+  const [languageCode, setLanguageCode] = useState('en-US');
+
   const audioRef = useRef(null);
 
   const { result, loading, error, audioUrl, generateSpeech, reset } = useTextToSpeech();
 
   const voices = {
     openai: ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'],
-    google: ['en-US-Neural2-A', 'en-US-Neural2-B', 'en-US-Wavenet-A'],
-    gemini: ['default']
+    google: [
+      // Gemini Native TTS
+      'natural_control', 'expressive', 'conversational',
+      // Google Cloud TTS
+      'en-US-Neural2-A', 'en-US-Neural2-B', 'en-US-Wavenet-A', 'en-US-Standard-A'
+    ]
   };
 
   const handleSubmit = async (e) => {
@@ -30,6 +45,11 @@ const TextToSpeech = () => {
         voice,
         speed,
         provider,
+        model: model || null,
+        system_prompt: systemPrompt,
+        instructions: instructions,
+        response_format: responseFormat,
+        language_code: languageCode,
       });
     } catch (err) {
       console.error('TTS generation failed:', err);
@@ -67,13 +87,13 @@ const TextToSpeech = () => {
   ];
 
   return (
-    <div className="text-to-speech">
-      <h2>🎵 Text-to-Speech</h2>
+    <div className={styles.textToSpeech}>
+      <h2 className={styles.title}>🎵 Text-to-Speech</h2>
 
-      <form onSubmit={handleSubmit} className="tts-form">
+      <form onSubmit={handleSubmit} className={`card ${styles.form}`}>
         {/* Text Input */}
         <div className="form-group">
-          <label htmlFor="text">Text to Convert:</label>
+          <label htmlFor="text" className="form-label">Text to Convert:</label>
           <textarea
             id="text"
             value={text}
@@ -81,18 +101,19 @@ const TextToSpeech = () => {
             placeholder="Enter the text you want to convert to speech..."
             rows={6}
             required
+            className="form-input form-textarea"
           />
 
           {/* Sample Texts */}
-          <div className="sample-texts">
-            <label>Quick samples:</label>
-            <div className="sample-buttons">
+          <div className={styles.sampleTexts}>
+            <label className="text-sm text-secondary">Quick samples:</label>
+            <div className={styles.sampleButtons}>
               {sampleTexts.map((sample, index) => (
                 <button
                   key={index}
                   type="button"
                   onClick={() => setText(sample)}
-                  className="sample-btn"
+                  className={styles.sampleBtn}
                 >
                   Sample {index + 1}
                 </button>
@@ -102,10 +123,10 @@ const TextToSpeech = () => {
         </div>
 
         {/* Settings */}
-        <div className="settings-grid">
+        <div className={styles.settingsGrid}>
           {/* Provider Selection */}
           <div className="form-group">
-            <label htmlFor="provider">Provider:</label>
+            <label htmlFor="provider" className="form-label">Provider:</label>
             <select
               id="provider"
               value={provider}
@@ -113,20 +134,21 @@ const TextToSpeech = () => {
                 setProvider(e.target.value);
                 setVoice(voices[e.target.value][0]); // Reset to first voice
               }}
+              className="form-input form-select"
             >
-              <option value="openai">OpenAI</option>
-              <option value="google">Google</option>
-              <option value="gemini">Gemini</option>
+              <option value="openai">OpenAI TTS</option>
+              <option value="google">Google (Gemini + Cloud TTS)</option>
             </select>
           </div>
 
           {/* Voice Selection */}
           <div className="form-group">
-            <label htmlFor="voice">Voice:</label>
+            <label htmlFor="voice" className="form-label">Voice:</label>
             <select
               id="voice"
               value={voice}
               onChange={(e) => setVoice(e.target.value)}
+              className="form-input form-select"
             >
               {voices[provider].map(v => (
                 <option key={v} value={v}>
@@ -138,7 +160,7 @@ const TextToSpeech = () => {
 
           {/* Speed Control */}
           <div className="form-group">
-            <label htmlFor="speed">Speed ({speed}x):</label>
+            <label htmlFor="speed" className="form-label">Speed ({speed}x):</label>
             <input
               id="speed"
               type="range"
@@ -147,8 +169,9 @@ const TextToSpeech = () => {
               step="0.1"
               value={speed}
               onChange={(e) => setSpeed(parseFloat(e.target.value))}
+              className="form-range"
             />
-            <div className="speed-labels">
+            <div className={styles.speedLabels}>
               <span>0.25x</span>
               <span>1.0x</span>
               <span>4.0x</span>
@@ -156,20 +179,131 @@ const TextToSpeech = () => {
           </div>
         </div>
 
+        {/* Advanced Options Toggle */}
+        <div className="form-group">
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="btn btn-outline btn-sm"
+          >
+            {showAdvanced ? '🔽 Hide Advanced Options' : '🔧 Show Advanced Options'}
+          </button>
+        </div>
+
+        {/* Advanced Options */}
+        {showAdvanced && (
+          <div className={`${styles.advancedOptions} card`}>
+            <h4>🔧 Advanced Options</h4>
+
+            <div className={styles.settingsGrid}>
+              {/* Model Selection */}
+              <div className="form-group">
+                <label htmlFor="model" className="form-label">Model (optional):</label>
+                <input
+                  id="model"
+                  type="text"
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  placeholder={provider === 'openai' ? 'tts-1 or tts-1-hd' : 'gemini-2.5-flash-preview-tts'}
+                  className="form-input"
+                />
+                <small className="text-secondary">Leave empty for default model</small>
+              </div>
+
+              {/* Response Format */}
+              <div className="form-group">
+                <label htmlFor="responseFormat" className="form-label">Audio Format:</label>
+                <select
+                  id="responseFormat"
+                  value={responseFormat}
+                  onChange={(e) => setResponseFormat(e.target.value)}
+                  className="form-input form-select"
+                >
+                  <option value="mp3">MP3</option>
+                  <option value="wav">WAV</option>
+                  <option value="opus">OPUS</option>
+                  <option value="aac">AAC</option>
+                  <option value="flac">FLAC</option>
+                  <option value="pcm">PCM</option>
+                </select>
+              </div>
+
+              {/* Language Code */}
+              <div className="form-group">
+                <label htmlFor="languageCode" className="form-label">Language Code:</label>
+                <select
+                  id="languageCode"
+                  value={languageCode}
+                  onChange={(e) => setLanguageCode(e.target.value)}
+                  className="form-input form-select"
+                >
+                  <option value="en-US">English (US)</option>
+                  <option value="en-GB">English (UK)</option>
+                  <option value="vi-VN">Vietnamese</option>
+                  <option value="ja-JP">Japanese</option>
+                  <option value="ko-KR">Korean</option>
+                  <option value="zh-CN">Chinese (Simplified)</option>
+                  <option value="fr-FR">French</option>
+                  <option value="de-DE">German</option>
+                  <option value="es-ES">Spanish</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Provider-specific options */}
+            {provider === 'openai' && (
+              <div className="form-group">
+                <label htmlFor="instructions" className="form-label">Instructions (OpenAI):</label>
+                <textarea
+                  id="instructions"
+                  value={instructions}
+                  onChange={(e) => setInstructions(e.target.value)}
+                  placeholder="Additional instructions for voice style..."
+                  rows={2}
+                  className="form-input form-textarea"
+                />
+                <small className="text-secondary">Custom instructions for OpenAI TTS voice style</small>
+              </div>
+            )}
+
+            {(provider === 'gemini' || provider === 'google') && (
+              <div className="form-group">
+                <label htmlFor="systemPrompt" className="form-label">System Prompt (Gemini):</label>
+                <textarea
+                  id="systemPrompt"
+                  value={systemPrompt}
+                  onChange={(e) => setSystemPrompt(e.target.value)}
+                  placeholder="System prompt for TTS style control..."
+                  rows={2}
+                  className="form-input form-textarea"
+                />
+                <small className="text-secondary">System prompt for Gemini TTS style control</small>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Action Buttons */}
-        <div className="form-actions">
+        <div className={styles.actions}>
           <button
             type="submit"
             disabled={loading}
-            className="generate-btn"
+            className="btn btn-success btn-lg"
           >
-            {loading ? '🔄 Converting...' : '🎵 Convert to Speech'}
+            {loading ? (
+              <>
+                <span className="spinner"></span>
+                Converting...
+              </>
+            ) : (
+              '🎵 Convert to Speech'
+            )}
           </button>
 
           <button
             type="button"
             onClick={handleReset}
-            className="reset-btn"
+            className="btn btn-secondary"
           >
             🗑️ Reset
           </button>
@@ -233,275 +367,68 @@ const TextToSpeech = () => {
                   <div className="info-item">
                     <strong>Format:</strong> {result.audio_format?.toUpperCase()}
                   </div>
+                  {result.model && (
+                    <div className="info-item">
+                      <strong>Model:</strong> {result.model}
+                    </div>
+                  )}
+                  {result.speed && result.speed !== 1.0 && (
+                    <div className="info-item">
+                      <strong>Speed:</strong> {result.speed}x
+                    </div>
+                  )}
+                  {result.language_code && result.language_code !== 'en-US' && (
+                    <div className="info-item">
+                      <strong>Language:</strong> {result.language_code}
+                    </div>
+                  )}
                 </div>
+
+                {/* Advanced parameters used */}
+                {(result.instructions || result.system_prompt || result.prompt_prefix) && (
+                  <div className={styles.usedParams}>
+                    <h5>📋 Parameters Used:</h5>
+                    {result.instructions && (
+                      <div className="param-item">
+                        <strong>Instructions:</strong> {result.instructions}
+                      </div>
+                    )}
+                    {result.system_prompt && (
+                      <div className="param-item">
+                        <strong>System Prompt:</strong> {result.system_prompt}
+                      </div>
+                    )}
+                    {result.prompt_prefix && (
+                      <div className="param-item">
+                        <strong>Prompt Prefix:</strong> {result.prompt_prefix}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Text Display */}
-              <div className="converted-text">
+              <div className={styles.convertedText}>
                 <h4>📝 Converted Text:</h4>
                 <p>{result.text}</p>
               </div>
 
               {/* Available Voices */}
               {result.available_voices && (
-                <div className="available-voices">
+                <div className={styles.availableVoices}>
                   <h4>🎭 Available Voices:</h4>
                   <pre>{JSON.stringify(result.available_voices, null, 2)}</pre>
                 </div>
               )}
             </div>
           ) : (
-            <div className="error-message">
+            <div className="alert alert-error">
               ❌ Conversion failed: {result.error}
             </div>
           )}
         </div>
       )}
 
-      <style jsx>{`
-        .text-to-speech {
-          max-width: 800px;
-          margin: 0 auto;
-          padding: 20px;
-          font-family: Arial, sans-serif;
-        }
-
-        .tts-form {
-          background: white;
-          padding: 20px;
-          border-radius: 8px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-          margin-bottom: 20px;
-        }
-
-        .form-group {
-          margin-bottom: 20px;
-        }
-
-        .form-group label {
-          display: block;
-          margin-bottom: 5px;
-          font-weight: bold;
-        }
-
-        .form-group textarea,
-        .form-group select,
-        .form-group input {
-          width: 100%;
-          padding: 10px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          font-size: 14px;
-        }
-
-        .form-group textarea {
-          resize: vertical;
-          font-family: inherit;
-        }
-
-        .sample-texts {
-          margin-top: 10px;
-        }
-
-        .sample-texts label {
-          margin-bottom: 8px;
-          font-size: 12px;
-          color: #666;
-        }
-
-        .sample-buttons {
-          display: flex;
-          gap: 5px;
-          flex-wrap: wrap;
-        }
-
-        .sample-btn {
-          padding: 4px 8px;
-          background: #e9ecef;
-          border: 1px solid #ced4da;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 11px;
-        }
-
-        .sample-btn:hover {
-          background: #dee2e6;
-        }
-
-        .settings-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr 1fr;
-          gap: 20px;
-          margin: 20px 0;
-        }
-
-        .speed-labels {
-          display: flex;
-          justify-content: space-between;
-          font-size: 12px;
-          color: #666;
-          margin-top: 5px;
-        }
-
-        .form-actions {
-          display: flex;
-          gap: 10px;
-          justify-content: center;
-          margin-top: 20px;
-        }
-
-        .generate-btn,
-        .reset-btn {
-          padding: 12px 24px;
-          border: none;
-          border-radius: 4px;
-          font-size: 16px;
-          cursor: pointer;
-          font-weight: bold;
-        }
-
-        .generate-btn {
-          background: #28a745;
-          color: white;
-        }
-
-        .generate-btn:hover:not(:disabled) {
-          background: #218838;
-        }
-
-        .generate-btn:disabled {
-          background: #ccc;
-          cursor: not-allowed;
-        }
-
-        .reset-btn {
-          background: #6c757d;
-          color: white;
-        }
-
-        .reset-btn:hover {
-          background: #545b62;
-        }
-
-        .error-message {
-          background: #f8d7da;
-          color: #721c24;
-          padding: 15px;
-          border-radius: 4px;
-          margin: 10px 0;
-        }
-
-        .results-section {
-          background: white;
-          padding: 20px;
-          border-radius: 8px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .audio-result {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-
-        .audio-player {
-          text-align: center;
-        }
-
-        .audio-element {
-          width: 100%;
-          margin-bottom: 10px;
-        }
-
-        .audio-controls {
-          display: flex;
-          gap: 10px;
-          justify-content: center;
-        }
-
-        .play-btn,
-        .download-btn {
-          padding: 8px 16px;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 14px;
-        }
-
-        .play-btn {
-          background: #007bff;
-          color: white;
-        }
-
-        .play-btn:hover {
-          background: #0056b3;
-        }
-
-        .download-btn {
-          background: #28a745;
-          color: white;
-        }
-
-        .download-btn:hover {
-          background: #218838;
-        }
-
-        .audio-info {
-          background: #f8f9fa;
-          padding: 15px;
-          border-radius: 4px;
-        }
-
-        .info-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
-        }
-
-        .info-item {
-          padding: 5px 0;
-        }
-
-        .converted-text {
-          background: #e7f3ff;
-          padding: 15px;
-          border-radius: 4px;
-        }
-
-        .converted-text p {
-          margin: 10px 0 0 0;
-          line-height: 1.5;
-        }
-
-        .available-voices {
-          background: #f8f9fa;
-          padding: 15px;
-          border-radius: 4px;
-        }
-
-        .available-voices pre {
-          background: white;
-          padding: 10px;
-          border-radius: 4px;
-          overflow-x: auto;
-          font-size: 12px;
-          margin: 10px 0 0 0;
-        }
-
-        @media (max-width: 768px) {
-          .settings-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .info-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .audio-controls {
-            flex-direction: column;
-          }
-        }
-      `}</style>
     </div>
   );
 };

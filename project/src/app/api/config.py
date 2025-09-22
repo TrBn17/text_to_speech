@@ -153,7 +153,7 @@ async def update_config(request: ConfigRequest):
             current_config["tts_parameters"] = request.tts_parameters
 
         # Import AI service to get available models
-        from src.app.core import ai_service
+        from ..core import ai_service
         available_models = ai_service.get_available_models()
 
         return ConfigResponse(
@@ -170,7 +170,7 @@ async def update_config(request: ConfigRequest):
 def format_config_for_user():
     """Format configuration data for better user readability"""
     try:
-        from src.app.core import ai_service
+        from ..core import ai_service
         available_models = ai_service.get_available_models()
 
         return {
@@ -234,25 +234,6 @@ def format_config_for_user():
 async def get_config():
     """Lấy cấu hình hiện tại với format dễ đọc cho người dùng"""
     return format_config_for_user()
-
-@router.get("/raw", response_model=ConfigResponse)
-async def get_config_raw():
-    """Lấy cấu hình dạng JSON thô cho API"""
-    try:
-        # Import AI service to get available models
-        from src.app.core import ai_service
-        available_models = ai_service.get_available_models()
-
-        return ConfigResponse(
-            model=current_config["model"],
-            system_prompt=current_config["system_prompt"],
-            model_parameters=current_config["model_parameters"],
-            tts_parameters=current_config["tts_parameters"],
-            available_models=available_models,
-            templates=get_config_templates()
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to get config: {str(e)}")
 
 @router.get("/templates")
 async def get_templates():

@@ -1,43 +1,67 @@
 // API Service for Text-to-Speech Application
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+import env, { debugLog } from '../config/environment';
 
 class ApiService {
   constructor() {
-    this.baseURL = API_BASE_URL;
+    this.baseURL = env.api.baseUrl;
+    this.timeout = env.api.timeout;
+    debugLog('API Service initialized with baseURL:', this.baseURL);
   }
 
   // Helper method for making requests
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
 
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
     try {
+      debugLog(`Making API request to: ${url}`, options);
+
       const response = await fetch(url, {
         ...options,
+        signal: controller.signal,
         headers: {
           ...options.headers,
         },
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+        const error = new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+        error.status = response.status;
+        error.data = errorData;
+        throw error;
       }
 
+      debugLog(`API request successful: ${url}`);
       return response;
     } catch (error) {
-      console.error(`API Error [${endpoint}]:`, error);
+      clearTimeout(timeoutId);
+
+      if (error.name === 'AbortError') {
+        const timeoutError = new Error(`Request timeout after ${this.timeout}ms`);
+        timeoutError.code = 'TIMEOUT';
+        debugLog(`API timeout [${endpoint}]:`, timeoutError);
+        throw timeoutError;
+      }
+
+      debugLog(`API Error [${endpoint}]:`, error);
       throw error;
     }
   }
 
   // Configuration endpoints
   async getConfig() {
-    const response = await this.request('/config');
+    const response = await this.request('/api/config');
     return response.json();
   }
 
   async updateConfig(config) {
-    const response = await this.request('/config', {
+    const response = await this.request('/api/config', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -48,23 +72,28 @@ class ApiService {
   }
 
   async getTemplates() {
-    const response = await this.request('/config/templates');
+    const response = await this.request('/api/config/templates');
     return response.json();
   }
 
   // Text Generation endpoints
-  async generateText({ prompt, maxTokens = 100, stream = false, files = [] }) {
+  async generateText({ prompt, maxTokens = 100, stream = false, files = [], model = 'gpt-4o-mini', systemPrompt = 'text_generation', customSystemPrompt = '', temperature = 0.7, topP = 0.9 }) {
     const formData = new FormData();
     formData.append('prompt', prompt);
     formData.append('max_tokens', maxTokens.toString());
     formData.append('stream', stream.toString());
+    formData.append('model', model);
+    formData.append('system_prompt', systemPrompt);  // Fixed: use system_prompt instead of systemPrompt
+    formData.append('custom_system_prompt', customSystemPrompt);  // Fixed: use custom_system_prompt instead of customSystemPrompt
+    formData.append('temperature', temperature.toString());
+    formData.append('top_p', topP.toString());
 
     // Add files if any
     files.forEach(file => {
       formData.append('files', file);
     });
 
-    const response = await this.request('/generate/text', {
+    const response = await this.request('/api/generate/text', {
       method: 'POST',
       body: formData,
     });
@@ -77,12 +106,17 @@ class ApiService {
   }
 
   // Streaming text generation
-  async *generateTextStream({ prompt, maxTokens = 100, files = [] }) {
+  async *generateTextStream({ prompt, maxTokens = 100, files = [], model = 'gpt-4o-mini', systemPrompt = 'text_generation', customSystemPrompt = '', temperature = 0.7, topP = 0.9 }) {
     const response = await this.generateText({
       prompt,
       maxTokens,
       stream: true,
       files,
+      model,
+      systemPrompt,
+      customSystemPrompt,
+      temperature,
+      topP,
     });
 
     const reader = response.body.getReader();
@@ -114,13 +148,41 @@ class ApiService {
   }
 
   // Text-to-Speech endpoints
-  async textToSpeech({ text, voice = 'alloy', speed = 1.0, provider = 'openai' }) {
-    const response = await this.request('/tts', {
+  async textToSpeech({
+    text,
+    voice = 'alloy',
+    speed = 1.0,
+    provider = 'openai',
+    model = null,
+    system_prompt = '',
+    instructions = '',
+    response_format = 'mp3',
+    prompt_prefix = '',
+    voice_config = null,
+    language_code = 'en-US'
+  }) {
+    const requestBody = {
+      text,
+      voice,
+      speed,
+      provider
+    };
+
+    // Add optional parameters only if they have values
+    if (model) requestBody.model = model;
+    if (system_prompt) requestBody.system_prompt = system_prompt;
+    if (instructions) requestBody.instructions = instructions;
+    if (response_format && response_format !== 'mp3') requestBody.response_format = response_format;
+    if (prompt_prefix) requestBody.prompt_prefix = prompt_prefix;
+    if (voice_config) requestBody.voice_config = voice_config;
+    if (language_code && language_code !== 'en-US') requestBody.language_code = language_code;
+
+    const response = await this.request('/api/tts', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ text, voice, speed, provider }),
+      body: JSON.stringify(requestBody),
     });
     return response.json();
   }

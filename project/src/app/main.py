@@ -1,6 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.app.api import config_router, generate_router, tts_router
+from .api import config_router, generate_router, tts_router
+from .api.models import router as models_router
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = FastAPI(
     title="Text-to-Speech & Text Generation API",
@@ -17,10 +23,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(config_router)
-app.include_router(generate_router)
-app.include_router(tts_router)
+# Include routers with /api prefix
+app.include_router(config_router, prefix="/api")
+app.include_router(generate_router, prefix="/api")
+app.include_router(tts_router, prefix="/api")
+app.include_router(models_router, prefix="/api")
 
 @app.get("/")
 async def root():
@@ -28,12 +35,16 @@ async def root():
         "message": "Text-to-Speech & Text Generation API",
         "version": "1.0.0",
         "endpoints": [
-            "/config",
-            "/generate",
-            "/tts"
-        ]
+            "/api/config",
+            "/api/generate",
+            "/api/tts",
+            "/api/models"
+        ],
+        "docs": "/docs",
+        "health": "/health"
     }
 
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "service": "text-to-speech-api"}
+

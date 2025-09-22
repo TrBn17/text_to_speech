@@ -172,7 +172,7 @@ class Settings(BaseSettings):
     )
     
     # App settings (direct field for BASE_URL)
-    base_url: str = Field(..., description="Application base URL")
+    base_url: str = Field(default="http://localhost:8000", description="Application base URL")
     
     # Nested settings (initialized after main settings)
     auth: Optional[AuthSettings] = None
@@ -182,6 +182,7 @@ class Settings(BaseSettings):
     minio: Optional[MinioSettings] = None
     redis: Optional[RedisSettings] = None
     langsmith: Optional[LangsmithSettings] = None
+    gemini: Optional[GeminiSettings] = None
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -193,6 +194,7 @@ class Settings(BaseSettings):
         self.minio = MinioSettings()
         self.redis = RedisSettings()
         self.langsmith = LangsmithSettings()
+        self.gemini = GeminiSettings()
 
 
 # Global settings instance

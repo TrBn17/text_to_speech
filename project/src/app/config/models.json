@@ -76,7 +76,7 @@
     }
   },
   "text_to_speech": {
-    "openai_tts": {
+    "openai": {
       "tts-1": {
         "voice": "alloy",
         "response_format": "mp3",
@@ -88,8 +88,9 @@
         "speed": 1.0
       }
     },
-    "gemini_tts": {
+    "google": {
       "gemini-2.5-flash-preview-tts": {
+        "type": "gemini_native",
         "voice_config": null,
         "audio_config": {
           "audio_encoding": "MP3",
@@ -98,16 +99,16 @@
         }
       },
       "gemini-2.5-pro-preview-tts": {
+        "type": "gemini_native",
         "voice_config": null,
         "audio_config": {
           "audio_encoding": "MP3",
           "sample_rate_hertz": 24000,
           "effects_profile_id": []
         }
-      }
-    },
-    "google_tts": {
+      },
       "chirp3-hd": {
+        "type": "cloud_tts",
         "voice": "en-US-Chirp3-HD-Achernar",
         "audio_config": {
           "audio_encoding": "MP3",
@@ -116,6 +117,7 @@
         }
       },
       "neural2": {
+        "type": "cloud_tts",
         "voice": "en-US-Neural2-A",
         "audio_config": {
           "audio_encoding": "MP3",
@@ -127,6 +129,7 @@
         }
       },
       "wavenet": {
+        "type": "cloud_tts",
         "voice": "en-US-Wavenet-A",
         "audio_config": {
           "audio_encoding": "MP3",
@@ -138,6 +141,7 @@
         }
       },
       "standard": {
+        "type": "cloud_tts",
         "voice": "en-US-Standard-A",
         "audio_config": {
           "audio_encoding": "MP3",
@@ -160,6 +164,18 @@
       "educational_tutor": "You are an educational tutor. Explain concepts clearly, provide examples, and help students learn step by step with encouragement.",
       "business_consultant": "You are a business consultant. Provide strategic advice, market insights, and practical solutions for business challenges.",
       "healthcare_advisor": "You are a healthcare information assistant. Provide general health information while always recommending users consult healthcare professionals for medical advice."
+    },
+    "tts_prompts": {
+      "default": "Read the text naturally with clear pronunciation",
+      "cheerful": "Speak in a cheerful and upbeat tone",
+      "calm": "Read in a calm and soothing voice",
+      "excited": "Speak with excitement and energy",
+      "professional": "Read in a professional and formal tone",
+      "storytelling": "Read like you're telling an engaging story",
+      "whisper": "Speak in a gentle whisper",
+      "dramatic": "Read with dramatic emphasis and emotion",
+      "friendly": "Speak in a warm and friendly manner",
+      "confident": "Read with confidence and authority"
     },
     "custom": {
       "role": "assistant",

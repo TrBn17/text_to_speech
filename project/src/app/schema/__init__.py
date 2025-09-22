@@ -1,1 +1,0 @@
-# Simplified schema exports

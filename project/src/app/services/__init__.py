@@ -1,1 +1,0 @@
-# Simplified services - no services needed for basic API

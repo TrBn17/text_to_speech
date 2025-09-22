@@ -86,7 +86,7 @@ frontend/package-lock.json
 # Databases
 *.sqlite3
 *.db
-
+*.env
 # Caches and packaging artifacts
 .cache/
 pip-wheel-metadata/

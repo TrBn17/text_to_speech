@@ -88,7 +88,7 @@ export function useTextGeneration() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const generateText = useCallback(async ({ prompt, maxTokens, files }) => {
+  const generateText = useCallback(async ({ prompt, maxTokens, files, model, systemPrompt, customSystemPrompt, temperature, topP }) => {
     setLoading(true);
     setError(null);
     setResult(null);
@@ -99,6 +99,11 @@ export function useTextGeneration() {
         maxTokens,
         stream: false,
         files,
+        model,
+        systemPrompt,
+        customSystemPrompt,
+        temperature,
+        topP,
       });
       setResult(response);
       return response;
@@ -133,7 +138,7 @@ export function useStreamingTextGeneration() {
   const [error, setError] = useState(null);
   const [isComplete, setIsComplete] = useState(false);
 
-  const generateStream = useCallback(async ({ prompt, maxTokens, files }) => {
+  const generateStream = useCallback(async ({ prompt, maxTokens, files, model, systemPrompt, customSystemPrompt, temperature, topP }) => {
     setLoading(true);
     setError(null);
     setContent('');
@@ -146,6 +151,11 @@ export function useStreamingTextGeneration() {
         prompt,
         maxTokens,
         files,
+        model,
+        systemPrompt,
+        customSystemPrompt,
+        temperature,
+        topP,
       });
 
       for await (const event of stream) {
@@ -164,6 +174,9 @@ export function useStreamingTextGeneration() {
           case 'error':
             setError(event.error);
             setLoading(false);
+            break;
+          default:
+            // Unknown event type, ignore
             break;
         }
       }
@@ -201,7 +214,19 @@ export function useTextToSpeech() {
   const [error, setError] = useState(null);
   const [audioUrl, setAudioUrl] = useState(null);
 
-  const generateSpeech = useCallback(async ({ text, voice, speed, provider }) => {
+  const generateSpeech = useCallback(async ({
+    text,
+    voice,
+    speed,
+    provider,
+    model = null,
+    system_prompt = '',
+    instructions = '',
+    response_format = 'mp3',
+    prompt_prefix = '',
+    voice_config = null,
+    language_code = 'en-US'
+  }) => {
     setLoading(true);
     setError(null);
     setResult(null);
@@ -213,6 +238,13 @@ export function useTextToSpeech() {
         voice,
         speed,
         provider,
+        model,
+        system_prompt,
+        instructions,
+        response_format,
+        prompt_prefix,
+        voice_config,
+        language_code,
       });
 
       setResult(response);

@@ -11,7 +11,13 @@
       "Bash(tasklist)",
       "Bash(npm start)",
       "WebFetch(domain:platform.openai.com)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(npm run build:*)",
+      "Bash(set)",
+      "Bash(pip install:*)",
+      "Bash(dir \"C:\\Users\\Hi\\text_to_speech\\frontend\\src\\components\")",
+      "WebFetch(domain:ai.google.dev)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
