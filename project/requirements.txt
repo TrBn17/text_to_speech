@@ -16,6 +16,8 @@ redis==6.2.0
 
 # AI and ML
 openai==1.86.0
+google-generativeai==0.8.3
+google-cloud-texttospeech==2.17.0
 langchain==0.3.25
 langchain-core==0.3.65
 langchain-openai==0.3.14
@@ -33,12 +35,15 @@ grpcio==1.73.1
 docling[cpu]==2.40.0
 docling-core==2.40.0
 pypdf==5.7.0
-pymupdf==1.26.3  
+PyPDF2==3.0.1
+pdfplumber==0.11.4
+pymupdf==1.26.3
 python-docx==1.1.2
 openpyxl==3.1.5
 pandas>=2.3.0,<3.0.0
 numpy>=2.2.0,<3.0.0
 pillow>=11.0.0
+pytesseract==0.3.13
 
 # File Storage
 minio==7.2.15

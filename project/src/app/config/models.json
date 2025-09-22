@@ -1,0 +1,178 @@
+{
+  "text_generation": {
+    "openai": {
+      "gpt-4o": {
+        "temperature": 1.0,
+        "max_tokens": 4096,
+        "top_p": 1.0,
+        "frequency_penalty": 0.0,
+        "presence_penalty": 0.0
+      },
+      "gpt-4o-mini": {
+        "temperature": 1.0,
+        "max_tokens": 16384,
+        "top_p": 1.0,
+        "frequency_penalty": 0.0,
+        "presence_penalty": 0.0
+      },
+      "gpt-4-turbo": {
+        "temperature": 1.0,
+        "max_tokens": 4096,
+        "top_p": 1.0,
+        "frequency_penalty": 0.0,
+        "presence_penalty": 0.0
+      },
+      "gpt-3.5-turbo": {
+        "temperature": 1.0,
+        "max_tokens": 4096,
+        "top_p": 1.0,
+        "frequency_penalty": 0.0,
+        "presence_penalty": 0.0
+      }
+    },
+    "gemini": {
+      "gemini-2.5-pro": {
+        "temperature": 1.0,
+        "max_output_tokens": 8192,
+        "top_p": 0.95,
+        "top_k": 40,
+        "thinking_budget": null
+      },
+      "gemini-2.5-flash": {
+        "temperature": 1.0,
+        "max_output_tokens": 8192,
+        "top_p": 0.95,
+        "top_k": 40,
+        "thinking_budget": null
+      },
+      "gemini-2.5-flash-lite": {
+        "temperature": 1.0,
+        "max_output_tokens": 8192,
+        "top_p": 0.95,
+        "top_k": 40,
+        "thinking_budget": null
+      },
+      "gemini-2.0-flash": {
+        "temperature": 1.0,
+        "max_output_tokens": 8192,
+        "top_p": 0.95,
+        "top_k": 40,
+        "thinking_budget": null
+      },
+      "gemini-1.5-pro": {
+        "temperature": 1.0,
+        "max_output_tokens": 8192,
+        "top_p": 0.95,
+        "top_k": 40,
+        "thinking_budget": null
+      },
+      "gemini-1.5-flash": {
+        "temperature": 1.0,
+        "max_output_tokens": 8192,
+        "top_p": 0.95,
+        "top_k": 40,
+        "thinking_budget": null
+      }
+    }
+  },
+  "text_to_speech": {
+    "openai_tts": {
+      "tts-1": {
+        "voice": "alloy",
+        "response_format": "mp3",
+        "speed": 1.0
+      },
+      "tts-1-hd": {
+        "voice": "alloy",
+        "response_format": "mp3",
+        "speed": 1.0
+      }
+    },
+    "gemini_tts": {
+      "gemini-2.5-flash-preview-tts": {
+        "voice_config": null,
+        "audio_config": {
+          "audio_encoding": "MP3",
+          "sample_rate_hertz": 24000,
+          "effects_profile_id": []
+        }
+      },
+      "gemini-2.5-pro-preview-tts": {
+        "voice_config": null,
+        "audio_config": {
+          "audio_encoding": "MP3",
+          "sample_rate_hertz": 24000,
+          "effects_profile_id": []
+        }
+      }
+    },
+    "google_tts": {
+      "chirp3-hd": {
+        "voice": "en-US-Chirp3-HD-Achernar",
+        "audio_config": {
+          "audio_encoding": "MP3",
+          "sample_rate_hertz": 24000,
+          "effects_profile_id": []
+        }
+      },
+      "neural2": {
+        "voice": "en-US-Neural2-A",
+        "audio_config": {
+          "audio_encoding": "MP3",
+          "sample_rate_hertz": 24000,
+          "speaking_rate": 1.0,
+          "pitch": 0.0,
+          "volume_gain_db": 0.0,
+          "effects_profile_id": []
+        }
+      },
+      "wavenet": {
+        "voice": "en-US-Wavenet-A",
+        "audio_config": {
+          "audio_encoding": "MP3",
+          "sample_rate_hertz": 24000,
+          "speaking_rate": 1.0,
+          "pitch": 0.0,
+          "volume_gain_db": 0.0,
+          "effects_profile_id": []
+        }
+      },
+      "standard": {
+        "voice": "en-US-Standard-A",
+        "audio_config": {
+          "audio_encoding": "MP3",
+          "sample_rate_hertz": 24000,
+          "speaking_rate": 1.0,
+          "pitch": 0.0,
+          "volume_gain_db": 0.0,
+          "effects_profile_id": []
+        }
+      }
+    }
+  },
+  "system_prompts": {
+    "default": {
+      "text_generation": "You are a helpful AI assistant. Please provide accurate and helpful responses to user queries.",
+      "creative_writing": "You are a creative writing assistant. Help users create engaging stories, poems, and creative content with vivid descriptions and compelling narratives.",
+      "code_assistant": "You are an expert programming assistant. Help users with coding problems, debugging, code review, and best practices across various programming languages.",
+      "data_analyst": "You are a data analysis expert. Help users analyze data, create insights, and provide statistical interpretations with clear explanations.",
+      "customer_support": "You are a friendly customer support representative. Provide helpful, patient, and professional assistance to resolve customer inquiries.",
+      "educational_tutor": "You are an educational tutor. Explain concepts clearly, provide examples, and help students learn step by step with encouragement.",
+      "business_consultant": "You are a business consultant. Provide strategic advice, market insights, and practical solutions for business challenges.",
+      "healthcare_advisor": "You are a healthcare information assistant. Provide general health information while always recommending users consult healthcare professionals for medical advice."
+    },
+    "custom": {
+      "role": "assistant",
+      "personality": "helpful",
+      "tone": "professional",
+      "language_style": "clear_and_concise",
+      "domain_expertise": "general",
+      "response_length": "moderate",
+      "creativity_level": "balanced"
+    }
+  },
+  "voices": {
+    "openai_voices": ["alloy", "echo", "fable", "onyx", "nova", "shimmer"],
+    "google_languages": ["en-US", "en-GB", "en-AU", "en-IN", "vi-VN", "ja-JP", "ko-KR", "zh-CN", "fr-FR", "de-DE", "es-ES", "pt-BR", "it-IT", "ru-RU", "ar-XA", "hi-IN"]
+  }
+}

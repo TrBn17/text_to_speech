@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(python:*)",
+      "Bash(uvicorn:*)",
+      "Bash(curl:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(tasklist)",
+      "Bash(npm start)",
+      "WebFetch(domain:platform.openai.com)",
+      "WebSearch"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

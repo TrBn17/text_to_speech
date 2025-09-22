@@ -149,6 +149,17 @@ class LangsmithSettings(BaseSettings):
     def is_enabled(self) -> bool:
         """Check if tracing is enabled"""
         return self.tracing.lower() in ("true", "1", "yes", "on")
+    
+class GeminiSettings(BaseSettings):
+    """Gemini API settings"""
+    model_config = SettingsConfigDict(
+        env_prefix="GEMINI__",
+        env_file=str(ENV_FILE),
+        case_sensitive=False,
+        extra="ignore"
+    )
+    
+    api_key: str = Field(..., description="Gemini API key")
 
 
 class Settings(BaseSettings):
