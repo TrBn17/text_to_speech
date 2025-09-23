@@ -118,7 +118,7 @@ export function useTextGeneration() {
   const reset = useCallback(() => {
     setResult(null);
     setError(null);
-    setLoading(false);
+    setLoading(false)
   }, []);
 
   return {

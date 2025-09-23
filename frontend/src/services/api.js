@@ -193,6 +193,18 @@ class ApiService {
     return response.json();
   }
 
+  // NotebookLM Audio Generation
+  async generateNotebookLMAudio({ cache_key = 'latest' }) {
+    const response = await this.request('/api/notebooklm/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ cache_key }),
+    });
+    return response.json();
+  }
+
   // API info
   async getApiInfo() {
     const response = await this.request('/');

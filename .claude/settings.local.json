@@ -17,7 +17,13 @@
       "Bash(pip install:*)",
       "Bash(dir \"C:\\Users\\Hi\\text_to_speech\\frontend\\src\\components\")",
       "WebFetch(domain:ai.google.dev)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(del \"C:\\Users\\Hi\\text_to_speech\\project\\src\\app\\services\\automation\\.env\")",
+      "Bash(timeout:*)",
+      "Bash(del \"C:\\Users\\Hi\\text_to_speech\\project\\src\\app\\core\\openai_service.py\")",
+      "Bash(playwright install)",
+      "Bash(dir:*)",
+      "Bash(npm install)"
     ],
     "deny": [],
     "ask": []

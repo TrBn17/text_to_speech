@@ -98,9 +98,13 @@ async def get_tts_models():
             ]
         }
 
+        # Get TTS models info from new config structure
+        tts_models_config = voices.get("tts_models", {})
+
         return {
             "models": models,
             "voices": available_voices,
+            "tts_models_config": tts_models_config,
             "total_models": len(models),
             "providers": list(tts_models.keys())
         }

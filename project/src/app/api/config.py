@@ -190,7 +190,6 @@ def format_config_for_user():
             },
             "available_options": {
                 "📚 Text Generation Models": {
-                    "🔴 OpenAI": list(available_models.get("text_generation", {}).get("openai", {}).keys()),
                     "🟢 Google Gemini": list(available_models.get("text_generation", {}).get("gemini", {}).keys())
                 },
                 "🎵 Text-to-Speech Options": {

@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .api import config_router, generate_router, tts_router
 from .api.models import router as models_router
+from .api.notebooklm import router as notebooklm_router
 from dotenv import load_dotenv
 import os
 
@@ -28,6 +29,7 @@ app.include_router(config_router, prefix="/api")
 app.include_router(generate_router, prefix="/api")
 app.include_router(tts_router, prefix="/api")
 app.include_router(models_router, prefix="/api")
+app.include_router(notebooklm_router, prefix="/api")
 
 @app.get("/")
 async def root():
@@ -38,7 +40,8 @@ async def root():
             "/api/config",
             "/api/generate",
             "/api/tts",
-            "/api/models"
+            "/api/models",
+            "/api/notebooklm"
         ],
         "docs": "/docs",
         "health": "/health"

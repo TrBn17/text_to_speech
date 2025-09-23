@@ -158,8 +158,36 @@ class GeminiSettings(BaseSettings):
         case_sensitive=False,
         extra="ignore"
     )
-    
+
     api_key: str = Field(..., description="Gemini API key")
+
+
+class GmailSettings(BaseSettings):
+    """Gmail settings for NotebookLM automation"""
+    model_config = SettingsConfigDict(
+        env_prefix="GMAIL__",
+        env_file=str(ENV_FILE),
+        case_sensitive=False,
+        extra="ignore"
+    )
+
+    email: str = Field(..., description="Gmail email address")
+    password: str = Field(..., description="Gmail password")
+
+
+class NotebookLMSettings(BaseSettings):
+    """NotebookLM automation settings"""
+    model_config = SettingsConfigDict(
+        env_prefix="NOTEBOOKLM__",
+        env_file=str(ENV_FILE),
+        case_sensitive=False,
+        extra="ignore"
+    )
+
+    auto_login: bool = Field(default=True, description="Enable automatic login")
+    headless: bool = Field(default=False, description="Run browser in headless mode")
+    timeout: int = Field(default=10000, description="Default timeout for selectors in milliseconds")
+    navigation_url: str = Field(default="https://notebooklm.google.com/", description="NotebookLM URL")
 
 
 class Settings(BaseSettings):
@@ -183,6 +211,8 @@ class Settings(BaseSettings):
     redis: Optional[RedisSettings] = None
     langsmith: Optional[LangsmithSettings] = None
     gemini: Optional[GeminiSettings] = None
+    gmail: Optional[GmailSettings] = None
+    notebooklm: Optional[NotebookLMSettings] = None
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -195,6 +225,8 @@ class Settings(BaseSettings):
         self.redis = RedisSettings()
         self.langsmith = LangsmithSettings()
         self.gemini = GeminiSettings()
+        self.gmail = GmailSettings()
+        self.notebooklm = NotebookLMSettings()
 
 
 # Global settings instance
