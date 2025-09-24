@@ -186,7 +186,7 @@ const ChatInterface = ({ onTextGenerated }) => {
   return (
     <div className={styles.chatInterface}>
       {/* Left Sidebar */}
-      <Sidebar title="⚙️ AI Settings">
+      <Sidebar title="AI Settings">
         <SettingsSection title="Model Configuration">
           <div className={styles.settingGroup}>
             <label htmlFor="model">AI Model</label>
