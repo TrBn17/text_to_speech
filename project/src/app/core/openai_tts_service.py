@@ -36,6 +36,18 @@ class OpenAITTSService:
                              instructions: str = "", response_format: str = "mp3") -> Dict[str, Any]:
         """Convert text to speech using OpenAI TTS"""
         try:
+            # Validate inputs
+            if not text or not text.strip():
+                return {
+                    "success": False,
+                    "error": "Text cannot be empty",
+                    "audio_base64": "",
+                    "audio_format": response_format,
+                    "text": text,
+                    "model": model,
+                    "timestamp": datetime.now().isoformat()
+                }
+
             # OpenAI TTS call
             response = self.client.audio.speech.create(
                 model=model,
@@ -47,14 +59,21 @@ class OpenAITTSService:
 
             # Get audio content
             audio_content = response.content
+            
+            # Convert to base64 for consistent API response
+            import base64
+            audio_base64 = base64.b64encode(audio_content).decode('utf-8')
 
             return {
                 "success": True,
+                "audio_base64": audio_base64,
                 "audio_content": audio_content,
                 "audio_format": response_format,
+                "text": text,
                 "model": model,
                 "voice": voice,
                 "speed": speed,
+                "duration": 0.0,  # OpenAI doesn't provide duration
                 "timestamp": datetime.now().isoformat()
             }
 
@@ -62,7 +81,10 @@ class OpenAITTSService:
             return {
                 "success": False,
                 "error": str(e),
+                "audio_base64": "",
                 "audio_content": None,
+                "audio_format": response_format,
+                "text": text,
                 "model": model,
                 "timestamp": datetime.now().isoformat()
             }

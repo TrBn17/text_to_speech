@@ -123,7 +123,7 @@ async def text_to_audio(request: TTSRequest):
             success=result["success"],
             audio_base64=result.get("audio_base64", ""),
             audio_format=result.get("audio_format", ""),
-            text=result["text"],
+            text=result.get("text", request.text),
             voice=result.get("voice", voice),
             duration=result.get("duration", 0.0),
             provider=provider,

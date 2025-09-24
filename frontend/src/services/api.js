@@ -17,6 +17,7 @@ class ApiService {
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
     try {
+      console.log(`🌐 Making API request to: ${url}`, options);
       debugLog(`Making API request to: ${url}`, options);
 
       const response = await fetch(url, {
@@ -37,6 +38,7 @@ class ApiService {
         throw error;
       }
 
+      console.log(`✅ API request successful: ${url}`);
       debugLog(`API request successful: ${url}`);
       return response;
     } catch (error) {
@@ -49,6 +51,7 @@ class ApiService {
         throw timeoutError;
       }
 
+      console.error(`❌ API Error [${endpoint}]:`, error);
       debugLog(`API Error [${endpoint}]:`, error);
       throw error;
     }
@@ -101,7 +104,10 @@ class ApiService {
     if (stream) {
       return response; // Return response for streaming
     } else {
-      return response.json();
+      const jsonResponse = await response.json();
+      console.log('✅ Text generation JSON response:', jsonResponse);
+      debugLog('✅ Text generation JSON response:', jsonResponse);
+      return jsonResponse;
     }
   }
 
@@ -177,6 +183,8 @@ class ApiService {
     if (voice_config) requestBody.voice_config = voice_config;
     if (language_code && language_code !== 'en-US') requestBody.language_code = language_code;
 
+    debugLog('🎵 TTS request body:', requestBody);
+
     const response = await this.request('/api/tts', {
       method: 'POST',
       headers: {
@@ -184,7 +192,10 @@ class ApiService {
       },
       body: JSON.stringify(requestBody),
     });
-    return response.json();
+
+    const jsonResponse = await response.json();
+    debugLog('✅ TTS JSON response:', jsonResponse);
+    return jsonResponse;
   }
 
   // Health check
@@ -194,13 +205,17 @@ class ApiService {
   }
 
   // NotebookLM Audio Generation
-  async generateNotebookLMAudio({ cache_key = 'latest' }) {
+  async generateNotebookLMAudio({ custom_text }) {
+    if (!custom_text || !custom_text.trim()) {
+      throw new Error('Custom text is required');
+    }
+    
     const response = await this.request('/api/notebooklm/generate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ cache_key }),
+      body: JSON.stringify({ custom_text: custom_text.trim() }),
     });
     return response.json();
   }

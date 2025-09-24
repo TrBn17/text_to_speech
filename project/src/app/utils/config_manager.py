@@ -5,14 +5,12 @@ Consolidates 6 duplicate config loading implementations
 import json
 import os
 from typing import Dict, Any, Optional
-from functools import lru_cache
 
 
 class ConfigManager:
     """Single source of truth for all configuration loading"""
 
     @staticmethod
-    @lru_cache(maxsize=1)  # Cache config to avoid repeated file reads
     def load_models_config() -> Dict[str, Any]:
         """Load models configuration from models.json file"""
         try:
@@ -53,11 +51,6 @@ class ConfigManager:
     def get_tts_models_by_provider(provider: str) -> Dict[str, Any]:
         """Get TTS models for specific provider"""
         return ConfigManager.get_models_by_provider(provider, "text_to_speech")
-
-    @staticmethod
-    def clear_cache():
-        """Clear configuration cache - useful for testing or config updates"""
-        ConfigManager.load_models_config.cache_clear()
 
     @staticmethod
     def get_config_path() -> str:

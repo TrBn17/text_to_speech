@@ -1,0 +1,28 @@
+.settingsSection {
+  margin-bottom: 2rem;
+}
+
+.sectionTitle {
+  color: #1a1a1a;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid rgba(26, 26, 26, 0.1);
+}
+
+.settingGroup {
+  margin-bottom: 1.25rem;
+}
+
+.label {
+  display: block;
+  color: #4a5568;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}

@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Form
+from fastapi import APIRouter, Form, File, UploadFile
 from pydantic import BaseModel
+from typing import List
 
 router = APIRouter(prefix="/generate", tags=["Text Generation"])
 
@@ -14,14 +15,15 @@ async def generate_text(
     system_prompt: str = Form(default="text_generation", description="System prompt type"),
     custom_system_prompt: str = Form(default="", description="Custom system prompt text"),
     temperature: float = Form(default=0.7, description="Temperature (0.0-2.0)"),
-    top_p: float = Form(default=0.9, description="Top-p (0.0-1.0)")
+    top_p: float = Form(default=0.9, description="Top-p (0.0-1.0)"),
+    files: List[UploadFile] = File(default=[], description="Optional files to include in the prompt")
 ):
     """Generate text từ prompt"""
     try:
         # Import services
         from ..core import ai_service
         from ..utils.config_manager import ConfigManager
-        from ..core.cache_manager import save_api_response
+        # Removed cache_manager import as caching is now disabled
 
         # Get system prompt text using ConfigManager
         if system_prompt == 'custom' and custom_system_prompt.strip():
@@ -31,10 +33,38 @@ async def generate_text(
             system_prompt_text = system_prompts.get(system_prompt,
                 "You are a helpful AI assistant. Please provide accurate and helpful responses to user queries.")
 
+        # Process uploaded files
+        processed_files = []
+        if files:
+            import tempfile
+            import os
+            import mimetypes
+
+            for file in files:
+                if file.filename:
+                    # Create temporary file
+                    suffix = os.path.splitext(file.filename)[1]
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+                        content = await file.read()
+                        temp_file.write(content)
+                        temp_path = temp_file.name
+
+                    # Get MIME type
+                    mime_type, _ = mimetypes.guess_type(file.filename)
+                    if not mime_type:
+                        mime_type = file.content_type or 'application/octet-stream'
+
+                    processed_files.append({
+                        'filename': file.filename,
+                        'file_path': temp_path,
+                        'mime_type': mime_type,
+                        'size': len(content)
+                    })
+
         # Generate text
         result = await ai_service.generate_text_with_files(
             prompt=prompt,
-            files=[],
+            files=processed_files,
             model=model,
             system_prompt=system_prompt_text,
             temperature=temperature,
@@ -42,38 +72,20 @@ async def generate_text(
             max_tokens=max_tokens
         )
 
+        # Clean up temporary files
+        for file_info in processed_files:
+            try:
+                os.unlink(file_info['file_path'])
+            except:
+                pass
+
         if result["success"]:
             generated_text = result["generated_text"]
 
-            # 🆕 Save response to cache automatically
-            try:
-                cache_metadata = {
-                    'original_prompt': prompt[:500],  # Store first 500 chars of prompt
-                    'model': model,
-                    'system_prompt': system_prompt,
-                    'api_params': {
-                        'max_tokens': max_tokens,
-                        'temperature': temperature,
-                        'top_p': top_p
-                    },
-                    'api_endpoint': '/api/generate/text',
-                    'usage': result.get('usage', {}),
-                    'timestamp': result.get('timestamp'),
-                    'content_length': len(generated_text)
-                }
-
-                cache_key = save_api_response('text_generation', generated_text, cache_metadata)
-
-                if cache_key:
-                    print(f"💾 API Response cached automatically: {cache_key}")
-                    print(f"   Content length: {len(generated_text)} chars")
-                else:
-                    print(f"⚠️ Failed to cache API response")
-
-            except Exception as cache_error:
-                print(f"⚠️ Cache error (non-critical): {cache_error}")
-                # Continue even if caching fails
-
+            # ✨ Caching disabled - return response directly
+            print(f"✅ Text generation completed (caching disabled)")
+            print(f"   Content length: {len(generated_text)} chars")
+            
             return GenerateResponse(response=generated_text)
         else:
             return GenerateResponse(response=f"Error: {result.get('error', 'Unknown error')}")

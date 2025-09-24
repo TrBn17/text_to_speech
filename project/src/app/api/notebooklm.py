@@ -24,70 +24,111 @@ sys.path.append(automation_dir)
 sys.path.append(flow_dir)
 
 from automate import run_notebooklm_automation
-from cache_manager import cache_manager, get_latest_text_generation
+
 router = APIRouter()
 
 class NotebookLMRequest(BaseModel):
-    cache_key: Optional[str] = "latest"
+    custom_text: str  # Required custom text input
 
 class NotebookLMResponse(BaseModel):
     success: bool
     message: str
     audio_url: Optional[str] = None
-    cache_info: Optional[Dict[str, Any]] = None
+    text_info: Optional[Dict[str, Any]] = None
     processing_time: Optional[float] = None
 
 @router.post("/notebooklm/generate", response_model=NotebookLMResponse)
-async def generate_audio_from_cache(request: NotebookLMRequest):
+async def generate_audio_from_text(request: NotebookLMRequest):
     """
-    Generate audio using NotebookLM automation from cached content.
+    Generate audio using NotebookLM automation from custom text.
     Returns audio download URL when completed.
+    
+    Note: This feature requires manual browser interaction due to Google's automation restrictions.
     """
     try:
         start_time = time.time()
         
-        # Validate cache exists
-        if request.cache_key == "latest":
-            cached_content = get_latest_text_generation()
-            if not cached_content:
-                raise HTTPException(
-                    status_code=404,
-                    detail="No cached content found. Please generate text content first."
-                )
-            # Get cache info for response
-            latest_cache = cache_manager.get_latest_response('text_generation')
-            cache_info = {
-                'cache_key': latest_cache.get('cache_key'),
-                'content_length': latest_cache.get('content_length'),
-                'created_at': latest_cache.get('created_at')
-            } if latest_cache else None
-        else:
-            cached_data = cache_manager.get_response_by_key(request.cache_key)
-            if not cached_data:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Cache key '{request.cache_key}' not found"
-                )
-            cache_info = {
-                'cache_key': cached_data.get('cache_key'),
-                'content_length': cached_data.get('content_length'),
-                'created_at': cached_data.get('created_at')
-            }
+        # Validate custom text is provided
+        if not request.custom_text or not request.custom_text.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="Custom text is required and cannot be empty."
+            )
+        
+        custom_text = request.custom_text.strip()
+        print(f"🚀 Using custom text for NotebookLM (length: {len(custom_text)} chars)")
+        
+        text_info = {
+            'source': 'custom_text',
+            'content_length': len(custom_text),
+            'created_at': 'now'
+        }
         
         # Run automation in thread pool to avoid sync/async conflict
-        print(f"🚀 Starting NotebookLM automation for cache: {request.cache_key}")
+        print(f"🚀 Starting NotebookLM automation with custom text")
 
         def run_automation():
-            return run_notebooklm_automation(
-                content_source=request.cache_key,
-                debug_mode=False,
-                max_wait_minutes=10
-            )
+            try:
+                # Check Playwright availability first
+                try:
+                    from playwright.sync_api import sync_playwright
+                    import os
+                    import asyncio
+                    
+                    # Windows-specific fix for subprocess
+                    if os.name == 'nt':  # Windows
+                        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+                    
+                    # Test Playwright installation properly
+                    print(f"🔍 Testing Playwright installation...")
+                    with sync_playwright() as p:
+                        browser_path = p.chromium.executable_path
+                        if not browser_path or not os.path.exists(browser_path):
+                            raise Exception("Playwright Chromium browser not found. Please run: playwright install chromium")
+                        print(f"✅ Playwright Chromium found at: {browser_path}")
+                except ImportError:
+                    raise Exception("Playwright not installed. Please run: pip install playwright && playwright install chromium")
+                except Exception as e:
+                    error_msg = str(e).lower()
+                    if "not found" in error_msg or "chromium" in error_msg:
+                        raise e
+                    elif "target page" in error_msg or "browser has been closed" in error_msg:
+                        print(f"⚠️ Browser closed during automation: {e}")
+                        raise Exception(f"Browser automation interrupted: {e}")
+                    else:
+                        print(f"❌ Playwright error: {e}")
+                        raise Exception(f"Playwright setup issue: {e}")
+                
+                # Validate content length
+                if len(custom_text.strip()) < 50:
+                    raise Exception(f"Content too short ({len(custom_text.strip())} chars). Minimum 50 characters required for NotebookLM.")
+                
+                print(f"🚀 Starting automation for {len(custom_text)} character text...")
+                result = run_notebooklm_automation(
+                    content_source=custom_text,
+                    debug_mode=False,
+                    max_wait_minutes=15  # Increase timeout to 15 minutes
+                )
+                print(f"🎯 Automation completed with result: {result}")
+                return result
+                
+            except Exception as e:
+                print(f"❌ Automation exception: {str(e)}")
+                print(f"❌ Exception type: {type(e).__name__}")
+                import traceback
+                print(f"❌ Traceback: {traceback.format_exc()}")
+                return False
 
-        # Execute in thread pool
+        # Execute in thread pool with timeout
         loop = asyncio.get_event_loop()
-        with ThreadPoolExecutor() as executor:
-            success = await loop.run_in_executor(executor, run_automation)
+        try:
+            with ThreadPoolExecutor() as executor:
+                future = loop.run_in_executor(executor, run_automation)
+                # Add a timeout to prevent hanging
+                success = await asyncio.wait_for(future, timeout=300)  # 5 minutes max
+        except asyncio.TimeoutError:
+            print("❌ Automation timed out after 5 minutes")
+            success = False
         
         processing_time = time.time() - start_time
         
@@ -97,21 +138,59 @@ async def generate_audio_from_cache(request: NotebookLMRequest):
             
             return NotebookLMResponse(
                 success=True,
-                message="Audio generated successfully! Check your Downloads folder.",
+                message="Audio generation initiated successfully! Please check your Downloads folder and browser for the completed audio file.",
                 audio_url=audio_url,
-                cache_info=cache_info,
+                text_info=text_info,
                 processing_time=processing_time
             )
         else:
-            raise HTTPException(
-                status_code=500,
-                detail="NotebookLM automation failed. Check browser for manual intervention."
+            # Provide more helpful error message with setup instructions
+            error_type = "Unknown automation error"
+            setup_instructions = ""
+            
+            # Check for common Playwright issues in logs
+            if "playwright" in str(custom_text).lower() or "chromium" in str(custom_text).lower():
+                error_type = "Playwright setup issue"
+                setup_instructions = (
+                    "🔧 Playwright Setup Required:\n"
+                    "1. Install Playwright: pip install playwright\n"
+                    "2. Install browsers: playwright install chromium\n"
+                    "3. Restart the application\n\n"
+                )
+            
+            return NotebookLMResponse(
+                success=False,
+                message=(
+                    f"NotebookLM automation failed ({error_type}). This can happen due to:\n"
+                    "• Browser automation restrictions\n"
+                    "• Playwright not properly installed\n"
+                    "• Changes in Google's NotebookLM interface\n"
+                    "• Network connectivity issues\n"
+                    "• Daily usage limits reached\n\n"
+                    f"{setup_instructions}"
+                    "💡 Manual alternative:\n"
+                    "1. Visit https://notebooklm.google.com/\n"
+                    "2. Create a new notebook\n"
+                    "3. Add your text as 'Copied text'\n"
+                    "4. Generate an 'Audio Overview'\n"
+                    "5. Download the generated audio file"
+                ),
+                text_info=text_info,
+                processing_time=processing_time
             )
         
     except HTTPException:
         raise
     except Exception as e:
+        error_message = (
+            f"Failed to generate audio: {str(e)}\n\n"
+            "💡 You can manually use NotebookLM:\n"
+            "1. Go to https://notebooklm.google.com/\n"
+            "2. Create a new notebook and paste your text\n"
+            "3. Generate an Audio Overview\n"
+            "4. Download the audio file"
+        )
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to generate audio: {str(e)}"
+            detail=error_message
         )

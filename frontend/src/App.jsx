@@ -1,25 +1,27 @@
 import React, { useState } from 'react';
-import TextGenerator from './components/TextGenerator';
+import ChatInterface from './components/ChatInterface';
 import TextToSpeech from './components/TextToSpeech';
 import { useHealthCheck, useApiInfo } from './hooks/useApi';
 import env from './config/environment';
 import styles from './styles/App.module.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('generator');
+  const [activeTab, setActiveTab] = useState('home');
   const [generatedText, setGeneratedText] = useState('');
   const { status: healthStatus } = useHealthCheck();
   const { info: apiInfo } = useApiInfo();
 
   // Simple tabs without complex configuration
   const tabs = [
-    { id: 'generator', label: '✨ Text Generator', component: TextGenerator },
-    { id: 'tts', label: '🎙️ Text-to-Conversation', component: TextToSpeech },
+    { id: 'home', label: '🏠 Home', component: null },
+    { id: 'generator', label: '💬 AI Chat', component: ChatInterface },
+    { id: 'tts', label: 'Text-to-Conversation', component: TextToSpeech },
   ];
 
   const handleTextGenerated = (text) => {
     setGeneratedText(text);
-    setActiveTab('tts'); // Auto-switch to TTS tab
+    // Note: Auto-switch to TTS disabled for better chat experience
+    // setActiveTab('tts'); // Auto-switch to TTS tab
   };
 
   const renderActiveComponent = () => {
@@ -38,51 +40,87 @@ function App() {
     return <Component />;
   };
 
-  return (
-    <div className={styles.app}>
-      {/* Header */}
-      <header className={styles.header}>
-        <div className={`container ${styles.headerContent}`}>
-          <h1 className={styles.title}>🤖 {env.app.name}</h1>
-          <div className={styles.headerInfo}>
-            {apiInfo && (
-              <span className={styles.apiVersion}>v{apiInfo.version}</span>
-            )}
-            <div className={`${styles.healthStatus} ${healthStatus?.status === 'healthy' ? styles.healthy : styles.unhealthy}`}>
-              {healthStatus?.status === 'healthy' ? '🟢 Online' : '🔴 Offline'}
+  const renderHomeContent = () => (
+    <div className={styles.homeContainer}>
+      <div className="container">
+        <div className={styles.homeContent}>
+          <h1 className={styles.homeTitle}>Welcome to {env.app.name}</h1>
+          <p className={styles.homeDescription}>
+            Your AI-powered text generation and audio conversion platform
+          </p>
+
+          <div className={styles.featureGrid}>
+            <div className={styles.featureCard}>
+              <div className={styles.featureIcon}>💬</div>
+              <h3>AI Chat</h3>
+              <p>Interactive chat with advanced AI models for text generation</p>
+              <button
+                onClick={() => setActiveTab('generator')}
+                className={styles.featureButton}
+              >
+                Start Chatting
+              </button>
+            </div>
+
+            <div className={styles.featureCard}>
+              <div className={styles.featureIcon}>🎙️</div>
+              <h3>Text-to-Conversation</h3>
+              <p>Convert text to natural speech and podcast-style conversations</p>
+              <button
+                onClick={() => setActiveTab('tts')}
+                className={styles.featureButton}
+              >
+                Convert Audio
+              </button>
             </div>
           </div>
         </div>
-      </header>
+      </div>
+    </div>
+  );
 
-      {/* Navigation */}
-      <nav className={styles.nav}>
-        <div className={`container ${styles.navTabs}`}>
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`${styles.navTab} ${activeTab === tab.id ? styles.active : ''}`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </nav>
+  return (
+    <div className={styles.app}>
+      {/* Unified pill tab switcher - always visible for all tabs */}
+      <div className={styles.chatTabSwitcher} data-active={activeTab}>
+        <button
+          onClick={() => setActiveTab('home')}
+          className={`${styles.chatTab} ${activeTab === 'home' ? styles.active : ''}`}
+        >
+          🏠 Home
+        </button>
+        <button
+          onClick={() => setActiveTab('generator')}
+          className={`${styles.chatTab} ${activeTab === 'generator' ? styles.active : ''}`}
+        >
+          💬 AI Chat
+        </button>
+        <button
+          onClick={() => setActiveTab('tts')}
+          className={`${styles.chatTab} ${activeTab === 'tts' ? styles.active : ''}`}
+        >
+          Text-to-Conversation
+        </button>
+      </div>
 
       {/* Main Content */}
-      <main className={styles.main}>
-        <div className="container">
-          {renderActiveComponent()}
-        </div>
+      <main className={`${styles.main} ${styles.withTabSwitcher}`}>
+        {activeTab === 'home' ? (
+          renderHomeContent()
+        ) : activeTab === 'generator' ? (
+          // Fullscreen for chat interface
+          renderActiveComponent()
+        ) : activeTab === 'tts' ? (
+          // Fullscreen for TTS interface
+          renderActiveComponent()
+        ) : (
+          // Container for other components
+          <div className="container">
+            {renderActiveComponent()}
+          </div>
+        )}
       </main>
 
-      {/* Footer */}
-      <footer className={styles.footer}>
-        <div className="container">
-          <p>🤖 AI Text Generator & Audio Converter</p>
-        </div>
-      </footer>
 
     </div>
   );

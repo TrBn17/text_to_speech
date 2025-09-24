@@ -3,6 +3,9 @@ import { useTextToSpeech } from '../hooks/useApi';
 import { useTTSModels } from '../hooks/useModels';
 import { apiService } from '../services/api';
 import env from '../config/environment';
+import Sidebar from './common/Sidebar';
+import { SettingsSection } from './common/SettingsSection';
+import { Select, Textarea, Slider } from './common/FormControls';
 import styles from '../styles/TextToSpeech.module.css';
 
 const TextToSpeech = ({ generatedText }) => {
@@ -17,7 +20,7 @@ const TextToSpeech = ({ generatedText }) => {
   const [isGeneratingNotebook, setIsGeneratingNotebook] = useState(false);
   const [notebookResult, setNotebookResult] = useState(null);
   const [notebookError, setNotebookError] = useState(null);
-  const [cacheKey, setCacheKey] = useState('latest');
+  const [customText, setCustomText] = useState(''); // Custom text for NotebookLM
 
   // Advanced options
   const [model, setModel] = useState('');
@@ -29,7 +32,7 @@ const TextToSpeech = ({ generatedText }) => {
   const audioRef = useRef(null);
 
   const { result, loading, error, audioUrl, generateSpeech, reset } = useTextToSpeech();
-  const { models: apiTtsModels, voices: apiVoices, loading: modelsLoading, error: modelsError } = useTTSModels();
+  const { models: apiTtsModels, voices: apiVoices, loading: modelsLoading } = useTTSModels();
 
   // Ensure apiVoices is always an object
   const safeApiVoices = apiVoices || { openai: [], google: [] };
@@ -125,14 +128,22 @@ const TextToSpeech = ({ generatedText }) => {
 
   // NotebookLM functions
   const handleGenerateNotebookAudio = async () => {
+    if (!customText.trim()) {
+      setNotebookError('Please enter some text to convert to audio');
+      return;
+    }
+
     setIsGeneratingNotebook(true);
     setNotebookError(null);
     setNotebookResult(null);
 
     try {
       console.log('🚀 Starting NotebookLM audio generation...');
+      console.log('📝 Using custom text (length:', customText.trim().length, 'chars)');
       
-      const response = await apiService.generateNotebookLMAudio({ cache_key: cacheKey });
+      const response = await apiService.generateNotebookLMAudio({
+        custom_text: customText.trim()
+      });
       
       console.log('✅ NotebookLM generation completed:', response);
       setNotebookResult(response);
@@ -162,520 +173,462 @@ const TextToSpeech = ({ generatedText }) => {
 
   return (
     <div className={styles.textToSpeech}>
-      <h2 className={styles.title}>🎙️ Text-to-Conversation</h2>
+      {/* Left Sidebar */}
+      <Sidebar title="🎙️ Audio Settings">
+        {/* Tab Navigation */}
+        <SettingsSection title="">
+          <div className={styles.tabNavigation}>
+            <button
+              onClick={() => setActiveTab('tts')}
+              className={`${styles.tabButton} ${activeTab === 'tts' ? styles.active : ''}`}
+            >
+              🎵 Text-to-Speech
+            </button>
+            <button
+              onClick={() => setActiveTab('notebooklm')}
+              className={`${styles.tabButton} ${activeTab === 'notebooklm' ? styles.active : ''}`}
+            >
+              🎙️ Conversation Audio
+            </button>
+          </div>
+        </SettingsSection>
 
-      {/* Tab Navigation */}
-      <div className={styles.card}>
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid #e2e8f0' }}>
-          <button
-            onClick={() => setActiveTab('tts')}
-            style={{
-              background: activeTab === 'tts' ? '#3b82f6' : 'transparent',
-              color: activeTab === 'tts' ? 'white' : '#6b7280',
-              border: 'none',
-              padding: '0.75rem 1rem',
-              borderRadius: '6px 6px 0 0',
-              cursor: 'pointer',
-              fontWeight: '600',
-              fontSize: '0.875rem',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            🎵 Text-to-Speech
-          </button>
-          <button
-            onClick={() => setActiveTab('notebooklm')}
-            style={{
-              background: activeTab === 'notebooklm' ? '#8b5cf6' : 'transparent',
-              color: activeTab === 'notebooklm' ? 'white' : '#6b7280',
-              border: 'none',
-              padding: '0.75rem 1rem',
-              borderRadius: '6px 6px 0 0',
-              cursor: 'pointer',
-              fontWeight: '600',
-              fontSize: '0.875rem',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            🎙️ Conversation Audio
-          </button>
-        </div>
-
-      {/* TTS Tab Content */}
-      {activeTab === 'tts' && (
-        <>
-        <form onSubmit={handleSubmit} className={styles.form}>
-          {/* Text Input */}
-          <div className={styles.formGroup}>
-            <label htmlFor="text">
-              Text to Convert
-              {generatedText && <span style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: '400' }}> (Auto-populated from Text Generator)</span>}
-            </label>
-            <textarea
-              id="text"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder="Enter the text you want to convert to speech..."
-              rows={6}
-              required
-              className={styles.textarea}
-            />
-
-            {/* Sample Texts */}
-            <div style={{ marginTop: '0.75rem' }}>
-              <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '0.5rem' }}>Quick samples:</div>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                {sampleTexts.map((sample, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => setText(sample)}
-                    style={{
-                      background: '#f3f4f6',
-                      border: '1px solid #d1d5db',
-                      padding: '0.25rem 0.5rem',
-                      borderRadius: '4px',
-                      fontSize: '0.75rem',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease'
+          {/* Settings based on active tab */}
+          {activeTab === 'tts' && (
+            <>
+              <SettingsSection title="Provider Configuration">
+                <div className={styles.settingGroup}>
+                  <label htmlFor="provider">Provider</label>
+                  <Select
+                    value={provider}
+                    onChange={(e) => {
+                      const newProvider = e.target.value;
+                      setProvider(newProvider);
+                      let providerVoices = [];
+                      if (newProvider === 'openai') {
+                        const openaiVoices = safeApiVoices?.openai || ['alloy'];
+                        providerVoices = openaiVoices.map(voice =>
+                          typeof voice === 'string' ? voice : (voice?.id || voice?.value || voice?.name || 'unknown')
+                        );
+                      } else if (newProvider === 'google') {
+                        const googleVoices = safeApiVoices?.google || ['natural_control'];
+                        providerVoices = googleVoices.map(voice =>
+                          typeof voice === 'string' ? voice : (voice?.id || voice?.value || voice?.name || 'unknown')
+                        );
+                      }
+                      if (providerVoices.length > 0) {
+                        setVoice(providerVoices[0]);
+                      }
                     }}
-                  >
-                    Sample {index + 1}
-                  </button>
-                ))}
+                    options={[
+                      { value: "openai", label: "OpenAI TTS" },
+                      { value: "google", label: "Google (Gemini + Cloud TTS)" }
+                    ]}
+                  />
+                </div>
+
+                <div className={styles.settingGroup}>
+                  <label htmlFor="voice">Voice</label>
+                  <Select
+                    value={voice}
+                    onChange={(e) => setVoice(e.target.value)}
+                    options={getVoicesForProvider().map((v, index) => {
+                      const voiceValue = typeof v === 'string' ? v : (v?.id || v?.value || v?.name || `voice-${index}`);
+                      const voiceLabel = typeof v === 'string' ? v.charAt(0).toUpperCase() + v.slice(1) : (v?.label || v?.name || voiceValue);
+                      return { value: voiceValue, label: voiceLabel };
+                    })}
+                  />
+                </div>
+
+                <div className={styles.settingGroup}>
+                  <label>Speed ({speed}x)</label>
+                  <Slider
+                    min={0.25}
+                    max={4}
+                    step={0.1}
+                    value={speed}
+                    onChange={(e) => setSpeed(parseFloat(e.target.value))}
+                    valueFormatter={(v) => `${v}x`}
+                  />
+                </div>
+              </SettingsSection>
+
+              <SettingsSection title="">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className={styles.advancedToggle}
+                >
+                  {showAdvanced ? '🔽 Hide Advanced' : '🔧 Advanced Options'}
+                </button>
+
+                {showAdvanced && (
+                  <SettingsSection title="Advanced Settings">
+                    <div className={styles.settingGroup}>
+                      <label htmlFor="model">Model</label>
+                      <Select
+                        value={model}
+                        onChange={(e) => setModel(e.target.value)}
+                        disabled={modelsLoading}
+                        options={[
+                          { value: "", label: "Default Model" },
+                          ...getModelsForProvider().map((modelOption) => ({
+                            value: modelOption.value,
+                            label: modelOption.label
+                          }))
+                        ]}
+                      />
+                    </div>
+
+                    <div className={styles.settingGroup}>
+                      <label htmlFor="responseFormat">Audio Format</label>
+                      <Select
+                        value={responseFormat}
+                        onChange={(e) => setResponseFormat(e.target.value)}
+                        options={[
+                          { value: "mp3", label: "MP3" },
+                          { value: "wav", label: "WAV" },
+                          { value: "opus", label: "OPUS" },
+                          { value: "aac", label: "AAC" }
+                        ]}
+                      />
+                    </div>
+
+                    <div className={styles.settingGroup}>
+                      <label htmlFor="languageCode">Language</label>
+                      <Select
+                        value={languageCode}
+                        onChange={(e) => setLanguageCode(e.target.value)}
+                        options={[
+                          { value: "en-US", label: "English (US)" },
+                          { value: "en-GB", label: "English (UK)" },
+                          { value: "vi-VN", label: "Vietnamese" },
+                          { value: "ja-JP", label: "Japanese" },
+                          { value: "ko-KR", label: "Korean" },
+                          { value: "zh-CN", label: "Chinese (Simplified)" },
+                          { value: "fr-FR", label: "French" },
+                          { value: "de-DE", label: "German" },
+                          { value: "es-ES", label: "Spanish" }
+                        ]}
+                      />
+                    </div>
+
+                    {/* Provider-specific options */}
+                    {provider === 'openai' && (
+                      <div className={styles.settingGroup}>
+                        <label htmlFor="instructions">Instructions (OpenAI)</label>
+                        <Textarea
+                          value={instructions}
+                          onChange={(e) => setInstructions(e.target.value)}
+                          placeholder="Additional instructions for voice style..."
+                          rows={2}
+                        />
+                      </div>
+                    )}
+
+                    {(provider === 'google') && (
+                      <div className={styles.settingGroup}>
+                        <label htmlFor="systemPrompt">System Prompt (Google)</label>
+                        <Textarea
+                          value={systemPrompt}
+                          onChange={(e) => setSystemPrompt(e.target.value)}
+                          placeholder="System prompt for TTS style control..."
+                          rows={2}
+                        />
+                      </div>
+                    )}
+                  </SettingsSection>
+                )}
+              </SettingsSection>
+
+              <SettingsSection title="Actions">
+                <button
+                  onClick={handleReset}
+                  className={styles.clearButton}
+                >
+                  🗑️ Reset
+                </button>
+              </SettingsSection>
+            </>
+          )}
+
+          {/* NotebookLM Settings */}
+          {activeTab === 'notebooklm' && (
+            <SettingsSection title="Conversation Settings">
+              <div className={styles.infoBox} style={{ marginTop: '1rem' }}>
+                <span>💡</span>
+                <div>
+                  <strong>NotebookLM:</strong> Converts your text into a natural conversation between two AI hosts.
+                </div>
               </div>
-            </div>
-          </div>
+            </SettingsSection>
+          )}
+      </Sidebar>
 
-          {/* Settings */}
-          <div className={styles.settingsGrid}>
-            {/* Provider Selection */}
-            <div className={styles.settingItem}>
-              <label htmlFor="provider">Provider</label>
-              <select
-                id="provider"
-                value={provider}
-                onChange={(e) => {
-                  const newProvider = e.target.value;
-                  setProvider(newProvider);
-                  // Reset to first voice for new provider
-                  let providerVoices = [];
-                  if (newProvider === 'openai') {
-                    const openaiVoices = safeApiVoices?.openai || ['alloy'];
-                    providerVoices = openaiVoices.map(voice =>
-                      typeof voice === 'string' ? voice : (voice?.id || voice?.value || voice?.name || 'unknown')
-                    );
-                  } else if (newProvider === 'google') {
-                    const googleVoices = safeApiVoices?.google || ['natural_control'];
-                    providerVoices = googleVoices.map(voice =>
-                      typeof voice === 'string' ? voice : (voice?.id || voice?.value || voice?.name || 'unknown')
-                    );
-                  }
-                  if (providerVoices.length > 0) {
-                    setVoice(providerVoices[0]);
-                  }
-                }}
-                className={styles.select}
-              >
-                <option value="openai">OpenAI TTS</option>
-                <option value="google">Google (Gemini + Cloud TTS)</option>
-              </select>
-            </div>
-
-            {/* Voice Selection */}
-            <div className={styles.settingItem}>
-              <label htmlFor="voice">Voice</label>
-              <select
-                id="voice"
-                value={voice}
-                onChange={(e) => setVoice(e.target.value)}
-                className={styles.select}
-              >
-                {getVoicesForProvider().map((v, index) => {
-                  const voiceValue = typeof v === 'string' ? v : (v?.id || v?.value || v?.name || `voice-${index}`);
-                  const voiceLabel = typeof v === 'string' ? v.charAt(0).toUpperCase() + v.slice(1) : (v?.label || v?.name || voiceValue);
-                  return (
-                    <option key={voiceValue} value={voiceValue}>
-                      {voiceLabel}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-
-            {/* Speed Control */}
-            <div className={styles.settingItem}>
-              <label>Speed</label>
-              <div className={styles.sliderContainer}>
-                <input
-                  id="speed"
-                  type="range"
-                  min="0.25"
-                  max="4"
-                  step="0.1"
-                  value={speed}
-                  onChange={(e) => setSpeed(parseFloat(e.target.value))}
-                  className={styles.slider}
-                />
-                <span className={styles.sliderValue}>{speed}x</span>
-              </div>
-            </div>
-          </div>
-
-        {/* Advanced Options Toggle */}
-        <div className="form-group">
-          <button
-            type="button"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            className="btn btn-outline btn-sm"
-          >
-            {showAdvanced ? '🔽 Hide Advanced Options' : '🔧 Show Advanced Options'}
-          </button>
+      {/* Right Content Area */}
+      <div className={styles.contentArea}>
+        <div className={styles.contentHeader}>
+          <h1 className={styles.contentTitle}>Text-to-Conversation</h1>
         </div>
 
-        {/* Advanced Options */}
-        {showAdvanced && (
-          <div className={`${styles.advancedOptions} card`}>
-            <h4>🔧 Advanced Options</h4>
+        <div className={styles.contentBody}>
+          {/* TTS Tab Content */}
+          {activeTab === 'tts' && (
+            <>
+              <form onSubmit={handleSubmit} className={styles.form}>
+                {/* Text Input */}
+                <div className={styles.formGroup}>
+                  <label htmlFor="text" className={styles.label}>
+                    Text to Convert
+                    {generatedText && <span className={styles.labelNote}> (Auto-populated)</span>}
+                  </label>
+                  <textarea
+                    id="text"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder="Enter the text you want to convert to speech..."
+                    rows={8}
+                    required
+                    className={styles.textarea}
+                  />
 
-            <div className={styles.settingsGrid}>
-              {/* Model Selection */}
-              <div className="form-group">
-                <label htmlFor="model" className="form-label">Model (optional):</label>
-                <select
-                  id="model"
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                  className="form-input form-select"
-                  disabled={modelsLoading}
-                >
-                  <option value="">Default Model</option>
-                  {getModelsForProvider().map((modelOption) => (
-                    <option key={modelOption.value} value={modelOption.value}>
-                      {modelOption.label}
-                    </option>
-                  ))}
-                </select>
-                <small className="text-secondary">
-                  {modelsLoading ? 'Loading models...' : 'Leave empty for default model'}
-                  {modelsError && <span className="text-danger"> - Error loading models</span>}
-                </small>
-              </div>
+                  {/* Sample Texts */}
+                  <div className={styles.sampleTexts}>
+                    <div className={styles.sampleLabel}>Quick samples:</div>
+                    <div className={styles.sampleButtons}>
+                      {sampleTexts.map((sample, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => setText(sample)}
+                          className={styles.sampleButton}
+                        >
+                          Sample {index + 1}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
 
-              {/* Response Format */}
-              <div className="form-group">
-                <label htmlFor="responseFormat" className="form-label">Audio Format:</label>
-                <select
-                  id="responseFormat"
-                  value={responseFormat}
-                  onChange={(e) => setResponseFormat(e.target.value)}
-                  className="form-input form-select"
-                >
-                  <option value="mp3">MP3</option>
-                  <option value="wav">WAV</option>
-                  <option value="opus">OPUS</option>
-                  <option value="aac">AAC</option>
-                  <option value="flac">FLAC</option>
-                  <option value="pcm">PCM</option>
-                </select>
-              </div>
+                {/* Action Buttons */}
+                <div className={styles.buttonGroup}>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className={styles.generateButton}
+                  >
+                    {loading ? (
+                      <>
+                        <span className={styles.loadingSpinner}></span>
+                        Converting...
+                      </>
+                    ) : (
+                      '🎵 Convert to Speech'
+                    )}
+                  </button>
+                </div>
+              </form>
 
-              {/* Language Code */}
-              <div className="form-group">
-                <label htmlFor="languageCode" className="form-label">Language Code:</label>
-                <select
-                  id="languageCode"
-                  value={languageCode}
-                  onChange={(e) => setLanguageCode(e.target.value)}
-                  className="form-input form-select"
-                >
-                  <option value="en-US">English (US)</option>
-                  <option value="en-GB">English (UK)</option>
-                  <option value="vi-VN">Vietnamese</option>
-                  <option value="ja-JP">Japanese</option>
-                  <option value="ko-KR">Korean</option>
-                  <option value="zh-CN">Chinese (Simplified)</option>
-                  <option value="fr-FR">French</option>
-                  <option value="de-DE">German</option>
-                  <option value="es-ES">Spanish</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Provider-specific options */}
-            {provider === 'openai' && (
-              <div className="form-group">
-                <label htmlFor="instructions" className="form-label">Instructions (OpenAI):</label>
-                <textarea
-                  id="instructions"
-                  value={instructions}
-                  onChange={(e) => setInstructions(e.target.value)}
-                  placeholder="Additional instructions for voice style..."
-                  rows={2}
-                  className="form-input form-textarea"
-                />
-                <small className="text-secondary">Custom instructions for OpenAI TTS voice style</small>
-              </div>
-            )}
-
-            {(provider === 'gemini' || provider === 'google') && (
-              <div className="form-group">
-                <label htmlFor="systemPrompt" className="form-label">System Prompt (Gemini):</label>
-                <textarea
-                  id="systemPrompt"
-                  value={systemPrompt}
-                  onChange={(e) => setSystemPrompt(e.target.value)}
-                  placeholder="System prompt for TTS style control..."
-                  rows={2}
-                  className="form-input form-textarea"
-                />
-                <small className="text-secondary">System prompt for Gemini TTS style control</small>
-              </div>
-            )}
-          </div>
-        )}
-
-          {/* Action Buttons */}
-          <div className={styles.buttonGroup}>
-            <button
-              type="submit"
-              disabled={loading}
-              className={styles.generateButton}
-            >
-              {loading ? (
-                <>
-                  <span className={styles.loadingSpinner}></span>
-                  Converting...
-                </>
-              ) : (
-                '🎵 Convert to Speech'
+              {/* Error Display */}
+              {error && (
+                <div className={styles.error}>
+                  ❌ Error: {error}
+                </div>
               )}
-            </button>
 
-            <button
-              type="button"
-              onClick={handleReset}
-              className={styles.resetButton}
-            >
-              🗑️ Reset
-            </button>
-          </div>
-        </form>
+              {/* Results Display */}
+              {result && (
+                <div className={styles.resultCard}>
+                  <h3 className={styles.resultTitle}>🎧 Audio Result</h3>
 
-        {/* Error Display */}
-        {error && (
-          <div className={styles.error}>
-            ❌ Error: {error}
-          </div>
-        )}
+                  {result.success ? (
+                    <div>
+                      {/* Audio Player */}
+                      {audioUrl && (
+                        <div>
+                          <audio
+                            ref={audioRef}
+                            src={audioUrl}
+                            controls
+                            className={styles.audioPlayer}
+                          />
 
-        {/* Results Display */}
-        {result && (
-          <div className={styles.resultCard}>
-            <h3 className={styles.resultTitle}>🎧 Audio Result</h3>
+                          <div className={styles.audioControls}>
+                            <button
+                              onClick={handlePlayAudio}
+                              className={styles.downloadButton}
+                            >
+                              ▶️ Play Audio
+                            </button>
 
-            {result.success ? (
-              <div>
-                {/* Audio Player */}
-                {audioUrl && (
-                  <div>
-                    <audio
-                      ref={audioRef}
-                      src={audioUrl}
-                      controls
-                      className={styles.audioPlayer}
-                    />
-
-                    <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-                      <button
-                        onClick={handlePlayAudio}
-                        className={styles.downloadButton}
-                      >
-                        ▶️ Play Audio
-                      </button>
-
-                      <button
-                        onClick={handleDownloadAudio}
-                        className={styles.downloadButton}
-                      >
-                        💾 Download MP3
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Audio Info */}
-                <div className="audio-info">
-                  <div className="info-grid">
-                    <div className="info-item">
-                      <strong>Voice:</strong> {result.voice}
-                    </div>
-                    <div className="info-item">
-                      <strong>Provider:</strong> {result.provider}
-                    </div>
-                    <div className="info-item">
-                      <strong>Duration:</strong> {result.duration?.toFixed(1)}s
-                    </div>
-                    <div className="info-item">
-                      <strong>Format:</strong> {result.audio_format?.toUpperCase()}
-                    </div>
-                    {result.model && (
-                      <div className="info-item">
-                        <strong>Model:</strong> {result.model}
-                      </div>
-                    )}
-                    {result.speed && result.speed !== 1.0 && (
-                      <div className="info-item">
-                        <strong>Speed:</strong> {result.speed}x
-                      </div>
-                    )}
-                    {result.language_code && result.language_code !== 'en-US' && (
-                      <div className="info-item">
-                        <strong>Language:</strong> {result.language_code}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Advanced parameters used */}
-                  {(result.instructions || result.system_prompt || result.prompt_prefix) && (
-                    <div className={styles.usedParams}>
-                      <h5>📋 Parameters Used:</h5>
-                      {result.instructions && (
-                        <div className="param-item">
-                          <strong>Instructions:</strong> {result.instructions}
+                            <button
+                              onClick={handleDownloadAudio}
+                              className={styles.downloadButton}
+                            >
+                              💾 Download MP3
+                            </button>
+                          </div>
                         </div>
                       )}
-                      {result.system_prompt && (
-                        <div className="param-item">
-                          <strong>System Prompt:</strong> {result.system_prompt}
+
+                      {/* Audio Info */}
+                      <div className={styles.audioInfo}>
+                        <div className={styles.infoGrid}>
+                          <div className={styles.infoItem}>
+                            <strong>Voice:</strong> {result.voice}
+                          </div>
+                          <div className={styles.infoItem}>
+                            <strong>Provider:</strong> {result.provider}
+                          </div>
+                          <div className={styles.infoItem}>
+                            <strong>Duration:</strong> {result.duration?.toFixed(1)}s
+                          </div>
+                          <div className={styles.infoItem}>
+                            <strong>Format:</strong> {result.audio_format?.toUpperCase()}
+                          </div>
                         </div>
-                      )}
-                      {result.prompt_prefix && (
-                        <div className="param-item">
-                          <strong>Prompt Prefix:</strong> {result.prompt_prefix}
-                        </div>
-                      )}
+                      </div>
+
+                      {/* Text Display */}
+                      <div className={styles.convertedText}>
+                        <h4>📝 Converted Text:</h4>
+                        <p>{result.text}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={styles.errorResult}>
+                      ❌ Conversion failed: {result.error}
                     </div>
                   )}
                 </div>
+              )}
+            </>
+          )}
 
-                {/* Text Display */}
-                <div className={styles.convertedText}>
-                  <h4>📝 Converted Text:</h4>
-                  <p>{result.text}</p>
+          {/* NotebookLM Tab Content */}
+          {activeTab === 'notebooklm' && (
+            <form onSubmit={(e) => { e.preventDefault(); handleGenerateNotebookAudio(); }} className={styles.form}>
+              {/* Custom Text Input */}
+              <div className={styles.formGroup}>
+                <label htmlFor="customText" className={styles.label}>✏️ Text to Convert</label>
+                <textarea
+                  id="customText"
+                  value={customText}
+                  onChange={(e) => setCustomText(e.target.value)}
+                  placeholder="Paste your text here that you want to convert to conversation audio...
+
+Example content:
+- Articles or blog posts
+- Research papers
+- Meeting notes
+- Educational content
+- Any text you want as a podcast conversation
+
+The AI will create a natural conversation between two hosts discussing your content."
+                  rows={10}
+                  className={styles.textarea}
+                  disabled={isGeneratingNotebook}
+                />
+                <div className={styles.textStats}>
+                  <small className={styles.textHelp}>
+                    Paste any text content to generate a conversation-style podcast
+                  </small>
+                  <small className={`${styles.charCount} ${customText.length > 10000 ? styles.warning : ''}`}>
+                    {customText.length} characters {customText.length > 10000 && '(⚠️ Very long text)'}
+                  </small>
                 </div>
+              </div>
 
-                {/* Available Voices */}
-                {result.available_voices && (
-                  <div className={styles.availableVoices}>
-                    <h4>🎭 Available Voices:</h4>
-                    <pre>{JSON.stringify(result.available_voices, null, 2)}</pre>
-                  </div>
-                )}
+              {/* Generate Button */}
+              <div className={styles.buttonGroup}>
+                <button
+                  type="submit"
+                  disabled={isGeneratingNotebook || !customText.trim()}
+                  className={styles.notebookButton}
+                >
+                  {isGeneratingNotebook ? (
+                    <>
+                      <span className={styles.loadingSpinner}></span>
+                      Generating Audio... (This may take 5-15 minutes)
+                    </>
+                  ) : (
+                    '🎙️ Generate Conversation Audio'
+                  )}
+                </button>
               </div>
-            ) : (
-              <div className="alert alert-error">
-                ❌ Conversion failed: {result.error}
+
+              {/* Info */}
+              <div className={styles.infoBox}>
+                <span>💡</span>
+                <div>
+                  <strong>How it works:</strong> NotebookLM will take your text and create a natural conversation-style podcast between two AI hosts discussing the content.
+                </div>
               </div>
-            )}
+
+              {/* Warning */}
+              <div className={styles.warningBox}>
+                <span>⚠️</span>
+                <div>
+                  <strong>Important:</strong> This process will open a browser window and may take 5-15 minutes to complete.
+                </div>
+              </div>
+
+              {/* Manual Alternative */}
+              <div className={styles.alternativeBox}>
+                <span>🛠️</span>
+                <div>
+                  <strong>Manual Alternative:</strong> If automation fails, you can:
+                  <ol className={styles.manualSteps}>
+                    <li>Visit <a href="https://notebooklm.google.com/" target="_blank" rel="noopener noreferrer">notebooklm.google.com</a></li>
+                    <li>Create a new notebook</li>
+                    <li>Add your text as "Copied text"</li>
+                    <li>Generate an "Audio Overview"</li>
+                    <li>Download the generated audio file</li>
+                  </ol>
+                </div>
+              </div>
+            </form>
+          )}
+        </div>
+
+        {/* Loading Progress */}
+        {isGeneratingNotebook && (
+          <div className={styles.loadingCard}>
+            <h3 className={styles.resultTitle}>🤖 Generating Audio...</h3>
+            <p className={styles.loadingText}>
+              Browser automation in progress... Please wait patiently.
+            </p>
           </div>
         )}
-        </>
-      )}
 
-        {/* NotebookLM Tab Content */}
-        {activeTab === 'notebooklm' && (
-          <form onSubmit={(e) => { e.preventDefault(); handleGenerateNotebookAudio(); }} className={styles.form}>
-            <div className={styles.formGroup}>
-              <label htmlFor="cacheSource">📦 Content Source</label>
-              <select
-                id="cacheSource"
-                value={cacheKey}
-                onChange={(e) => setCacheKey(e.target.value)}
-                className={styles.select}
-                disabled={isGeneratingNotebook}
-              >
-                <option value="latest">🕒 Latest Text Generation</option>
-                <option value="text_generation_1758614659">📄 text_generation_1758614659 (5353 chars)</option>
-                <option value="text_generation_1758612529">📄 text_generation_1758612529 (3459 chars)</option>
-                <option value="text_generation_1758612492">📄 text_generation_1758612492 (3506 chars)</option>
-              </select>
-              <small style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem', display: 'block' }}>
-                Generate conversation audio using NotebookLM automation from cached content
-              </small>
+        {/* Error Display */}
+        {notebookError && (
+          <div className={styles.error}>
+            <strong>❌ NotebookLM Error</strong>
+            <div className={styles.errorContent}>
+              {notebookError.split('\n').map((line, index) => (
+                <div key={index} className={styles.errorLine}>
+                  {line}
+                </div>
+              ))}
             </div>
+          </div>
+        )}
 
-            {/* Generate Button */}
-            <div className={styles.buttonGroup}>
-              <button
-                type="submit"
-                disabled={isGeneratingNotebook}
-                className={styles.notebookButton}
-              >
-                {isGeneratingNotebook ? (
-                  <>
-                    <span className={styles.loadingSpinner}></span>
-                    Generating Audio... (This may take 5-15 minutes)
-                  </>
-                ) : (
-                  '🎙️ Generate Conversation Audio'
-                )}
-              </button>
+        {/* Success Result */}
+        {notebookResult && notebookResult.success && (
+          <div className={styles.success}>
+            <strong>✅ Audio Generated Successfully!</strong>
+            <div className={styles.successDetails}>
+              <div>🎵 Audio File: <code>{notebookResult.audio_url}</code></div>
+              <div>⏱️ Processing Time: {formatProcessingTime(notebookResult.processing_time)}</div>
+              {notebookResult.text_info && (
+                <div>📄 Content: {notebookResult.text_info.content_length} characters</div>
+              )}
             </div>
-
-            {/* Warning */}
-            <div style={{
-              background: '#fff7ed',
-              border: '1px solid #fed7aa',
-              color: '#c2410c',
-              padding: '0.75rem',
-              borderRadius: '8px',
-              fontSize: '0.875rem',
-              marginTop: '1rem',
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '0.5rem'
-            }}>
-              <span>⚠️</span>
-              <div>
-                <strong>Important:</strong> This process will open a browser window 
-              </div>
-            </div>
-          </form>
+          </div>
         )}
       </div>
-
-      {/* Loading Progress */}
-      {isGeneratingNotebook && (
-        <div className={styles.resultCard}>
-          <h3 className={styles.resultTitle}>🤖 Generating Audio...</h3>
-          <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
-            Browser automation in progress... Please wait patiently.
-          </p>
-        </div>
-      )}
-
-      {/* Error Display */}
-      {notebookError && (
-        <div className={styles.error}>
-          ❌ Error: {notebookError}
-        </div>
-      )}
-
-      {/* Success Result */}
-      {notebookResult && notebookResult.success && (
-        <div className={styles.success}>
-          <strong>✅ Audio Generated Successfully!</strong>
-          <div style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
-            <div>🎵 Audio File: <code>{notebookResult.audio_url}</code></div>
-            <div style={{ marginTop: '0.25rem' }}>⏱️ Processing Time: {formatProcessingTime(notebookResult.processing_time)}</div>
-            {notebookResult.cache_info && (
-              <div style={{ marginTop: '0.25rem' }}>📦 Source: {notebookResult.cache_info.cache_key}</div>
-            )}
-          </div>
-        </div>
-      )}
-
     </div>
   );
 };

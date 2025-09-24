@@ -23,7 +23,9 @@
       "Bash(del \"C:\\Users\\Hi\\text_to_speech\\project\\src\\app\\core\\openai_service.py\")",
       "Bash(playwright install)",
       "Bash(dir:*)",
-      "Bash(npm install)"
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "WebFetch(domain:reactbits.dev)"
     ],
     "deny": [],
     "ask": []

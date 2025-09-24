@@ -17,8 +17,6 @@ automation_dir = os.path.join(app_dir, "services", "automation")
 sys.path.append(app_dir)
 sys.path.append(automation_dir)
 
-from cache_manager import cache_manager, get_latest_text_generation
-
 class NotebookLMAutomation:
     """NotebookLM automation handler for text-to-speech workflow."""
     
@@ -53,29 +51,19 @@ class NotebookLMAutomation:
         except Exception as e:
             print(f"⚠️ Debug error: {e}")
 
-    def get_cached_content(self, content_source="latest"):
-        """Retrieve content from cache."""
-        print("📤 Retrieving content from cache...")
+    def get_content(self, content_source):
+        """Get content from either direct text or file."""
+        print("📤 Processing content source...")
         
-        if content_source == "latest":
-            cached_content = get_latest_text_generation()
-            if not cached_content:
-                print("❌ No cached text generation found!")
-                return None
-            print(f"✅ Retrieved latest cached content ({len(cached_content)} chars)")
-        else:
-            cached_data = cache_manager.get_response_by_key(content_source)
-            if not cached_data:
-                print(f"❌ Cache key not found: {content_source}")
-                return None
-            cached_content = cached_data.get('response_data')
-            print(f"✅ Retrieved cached content by key: {content_source}")
-
-        if not cached_content or len(cached_content.strip()) == 0:
-            print("❌ Cached content is empty!")
-            return None
-            
-        return cached_content
+        # If content_source is already text (string with length > 10), use it directly
+        if isinstance(content_source, str) and len(content_source.strip()) > 10:
+            print(f"✅ Using direct text content ({len(content_source)} chars)")
+            return content_source.strip()
+        
+        # Otherwise treat as file path or other source
+        print(f"❌ Invalid content source (too short or not text): {content_source}")
+        print(f"💡 Content must be at least 10 characters long")
+        return None
 
     def upload_content_to_notebooklm(self, page, content):
         """Upload content to NotebookLM."""
@@ -291,96 +279,135 @@ class NotebookLMAutomation:
             print(f"❌ Audio download error: {e}")
             return False
 
-    def run_automation(self, content_source="latest", max_wait_minutes=10):
+    def check_playwright_installation(self):
+        """Check if Playwright is properly installed"""
+        try:
+            from playwright.sync_api import sync_playwright
+            with sync_playwright() as p:
+                # Test if chromium is available
+                browser_path = p.chromium.executable_path
+                if browser_path and os.path.exists(browser_path):
+                    print(f"✅ Playwright Chromium found: {browser_path}")
+                    return True
+                else:
+                    print("❌ Playwright Chromium not found")
+                    return False
+        except Exception as e:
+            print(f"❌ Playwright check failed: {e}")
+            return False
+
+    def run_automation(self, content_source, max_wait_minutes=10):
         """Run complete NotebookLM automation workflow."""
         try:
             print("🚀 Starting NotebookLM Text-to-Speech Automation")
             print("=" * 60)
             
-            # Get cached content
-            cached_content = self.get_cached_content(content_source)
-            if not cached_content:
+            # Check Playwright installation first
+            if not self.check_playwright_installation():
+                print("💡 Please install Playwright browsers:")
+                print("   pip install playwright")
+                print("   playwright install chromium")
+                return False
+            
+            # Get content
+            content = self.get_content(content_source)
+            if not content:
                 return False
                 
-            print(f"📝 Content preview: {cached_content[:100]}...")
+            print(f"📝 Content preview: {content[:100]}...")
             print(f"💡 Using Chrome profile: {self.profile_path}")
             
             # Launch browser
-            with sync_playwright() as p:
-                browser = p.chromium.launch_persistent_context(
-                    user_data_dir=self.profile_path,
-                    headless=False,
-                    args=[
-                        "--disable-blink-features=AutomationControlled",
-                        "--disable-infobars",
-                        "--disable-extensions",
-                        "--no-sandbox",
-                        "--disable-dev-shm-usage"
-                    ]
-                )
-                
-                page = browser.new_page()
-                
-                try:
-                    # Upload content
-                    if not self.upload_content_to_notebooklm(page, cached_content):
+            try:
+                print("🌐 Launching browser...")
+                with sync_playwright() as p:
+                    # Check if Chrome profile exists
+                    if not os.path.exists(self.profile_path):
+                        print(f"⚠️ Chrome profile not found: {self.profile_path}")
+                        print("💡 Creating default profile path...")
+                        os.makedirs(self.profile_path, exist_ok=True)
+                    
+                    browser = p.chromium.launch_persistent_context(
+                        user_data_dir=self.profile_path,
+                        headless=False,
+                        args=[
+                            "--disable-blink-features=AutomationControlled",
+                            "--disable-infobars",
+                            "--disable-extensions",
+                            "--no-sandbox",
+                            "--disable-dev-shm-usage",
+                            "--disable-web-security",
+                            "--disable-features=VizDisplayCompositor"
+                        ]
+                    )
+                    
+                    print("✅ Browser launched successfully")
+                    page = browser.new_page()
+                    
+                    try:
+                        # Upload content
+                        if not self.upload_content_to_notebooklm(page, content):
+                            return False
+                        
+                        # Generate audio
+                        if not self.generate_audio_overview(page):
+                            return False
+                        
+                        # Wait for completion
+                        audio_ready = self.wait_for_audio_completion(page, max_wait_minutes)
+                        
+                        # Download audio
+                        download_success = self.download_audio(page)
+                        
+                        # Summary
+                        print("\n🎉 Automation Workflow Completed!")
+                        print("📊 Summary:")
+                        print(f"   ✅ Content source: custom text")
+                        print(f"   ✅ Content length: {len(content)} chars")
+                        print(f"   ✅ Upload: SUCCESS")
+                        print(f"   ✅ Audio generation: {'SUCCESS' if audio_ready else 'TIMEOUT'}")
+                        print(f"   ✅ Download: {'SUCCESS' if download_success else 'PARTIAL'}")
+                        
+                        print("\n💡 Browser staying open for manual check...")
+                        print("💡 Check Downloads folder for audio file")
+                        page.wait_for_timeout(3000)
+                        
+                        return True
+                        
+                    except Exception as e:
+                        print(f"❌ Automation error: {e}")
+                        print(f"❌ Error details: {type(e).__name__}: {str(e)}")
+                        self.debug_page_state(page, "error_state")
                         return False
-                    
-                    # Generate audio
-                    if not self.generate_audio_overview(page):
-                        return False
-                    
-                    # Wait for completion
-                    audio_ready = self.wait_for_audio_completion(page, max_wait_minutes)
-                    
-                    # Download audio
-                    download_success = self.download_audio(page)
-                    
-                    # Summary
-                    print("\n🎉 Automation Workflow Completed!")
-                    print("📊 Summary:")
-                    print(f"   ✅ Content source: {content_source}")
-                    print(f"   ✅ Content length: {len(cached_content)} chars")
-                    print(f"   ✅ Upload: SUCCESS")
-                    print(f"   ✅ Audio generation: {'SUCCESS' if audio_ready else 'TIMEOUT'}")
-                    print(f"   ✅ Download: {'SUCCESS' if download_success else 'PARTIAL'}")
-                    
-                    print("\n💡 Browser staying open for manual check...")
-                    print("💡 Check Downloads folder for audio file")
-                    page.wait_for_timeout(3000)
-                    
-                    return True
-                    
-                except Exception as e:
-                    print(f"❌ Automation error: {e}")
-                    self.debug_page_state(page, "error_state")
-                    return False
-                    
-                finally:
-                    browser.close()
+                        
+                    finally:
+                        try:
+                            browser.close()
+                        except:
+                            pass
+            
+            except Exception as browser_error:
+                print(f"❌ Browser launch error: {browser_error}")
+                print(f"❌ Error type: {type(browser_error).__name__}")
+                print("💡 Possible solutions:")
+                print("   1. Install Playwright browsers: playwright install chromium")
+                print("   2. Check Chrome installation")
+                print("   3. Run as administrator")
+                return False
                     
         except Exception as e:
             print(f"❌ Critical error: {e}")
+            print(f"❌ Error type: {type(e).__name__}")
+            print(f"❌ Error location: Content processing or setup")
+            return False
             return False
 
-def list_available_cache():
-    """List all available cached content."""
-    print("📋 Available cached content:")
-    responses = cache_manager.list_cached_responses('text_generation')
-    
-    if not responses:
-        print("   No cached content found")
-        print("💡 Please ensure cache contains text generation data")
-        return []
-    
-    return responses
-
-def run_notebooklm_automation(content_source="latest", debug_mode=False, max_wait_minutes=10):
+def run_notebooklm_automation(content_source, debug_mode=False, max_wait_minutes=10):
     """
     Run NotebookLM automation workflow.
     
     Args:
-        content_source: "latest" or specific cache key
+        content_source: Text content to convert to audio
         debug_mode: Enable debug screenshots and logs
         max_wait_minutes: Maximum wait time for audio generation
         
@@ -394,13 +421,5 @@ if __name__ == "__main__":
     print("🎯 NotebookLM Automation Manager")
     print("=" * 50)
     
-    # List available cache
-    available = list_available_cache()
-    
-    if available:
-        print("\n📤 Running automation with latest cached content...")
-        success = run_notebooklm_automation("latest", debug_mode=True)
-        print(f"\n🏁 Result: {'SUCCESS' if success else 'FAILED'}")
-    else:
-        print("\n❌ No cached content available")
-        print("💡 Please ensure cache contains text generation data")
+    print("\n❌ Direct execution not supported")
+    print("💡 Use the API endpoint to provide custom text")

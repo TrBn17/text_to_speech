@@ -89,11 +89,14 @@ export function useTextGeneration() {
   const [error, setError] = useState(null);
 
   const generateText = useCallback(async ({ prompt, maxTokens, files, model, systemPrompt, customSystemPrompt, temperature, topP }) => {
+    console.log('📞 generateText hook called with:', { prompt: prompt?.substring(0, 20) + '...', model });
     setLoading(true);
     setError(null);
     setResult(null);
 
     try {
+      console.log('🚀 Starting text generation with params:', { prompt, maxTokens, model, systemPrompt });
+
       const response = await apiService.generateText({
         prompt,
         maxTokens,
@@ -105,12 +108,18 @@ export function useTextGeneration() {
         temperature,
         topP,
       });
+
+      console.log('✅ Text generation response:', response);
+      console.log('📝 Setting result state with:', response);
       setResult(response);
+      console.log('🔄 Result state should be updated now');
       return response;
     } catch (err) {
+      console.error('❌ Text generation error:', err);
       setError(err.message);
       throw err;
     } finally {
+      console.log('🔄 Text generation finished, setting loading to false');
       setLoading(false);
     }
   }, []);
@@ -233,6 +242,8 @@ export function useTextToSpeech() {
     setAudioUrl(null);
 
     try {
+      console.log('🎵 Starting TTS generation with params:', { text: text.substring(0, 50) + '...', voice, speed, provider, model });
+
       const response = await apiService.textToSpeech({
         text,
         voice,
@@ -247,18 +258,22 @@ export function useTextToSpeech() {
         language_code,
       });
 
+      console.log('✅ TTS response received:', { success: response.success, hasAudio: !!response.audio_base64, error: response.error });
       setResult(response);
 
       if (response.success && response.audio_base64) {
         const url = apiService.createAudioUrl(response.audio_base64);
         setAudioUrl(url);
+        console.log('🔊 Audio URL created successfully');
       }
 
       return response;
     } catch (err) {
+      console.error('❌ TTS generation error:', err);
       setError(err.message);
       throw err;
     } finally {
+      console.log('🔄 TTS generation finished, setting loading to false');
       setLoading(false);
     }
   }, []);
