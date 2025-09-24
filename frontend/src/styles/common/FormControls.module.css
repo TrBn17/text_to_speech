@@ -1,0 +1,127 @@
+.select {
+  width: 100%;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  color: #1a1a1a;
+  border-radius: 6px;
+  font-size: 14px;
+  backdrop-filter: blur(10px);
+}
+
+.select:focus {
+  outline: none;
+  border-color: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.select option {
+  background: rgba(255, 255, 255, 0.95);
+  color: #1a1a1a;
+}
+
+.input {
+  width: 100%;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  color: #1a1a1a;
+  border-radius: 6px;
+  font-size: 14px;
+  backdrop-filter: blur(10px);
+}
+
+.input:focus {
+  outline: none;
+  border-color: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.input::placeholder {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.textarea {
+  width: 100%;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  color: #1a1a1a;
+  border-radius: 6px;
+  font-size: 14px;
+  backdrop-filter: blur(10px);
+  resize: vertical;
+  font-family: inherit;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.textarea::placeholder {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.sliderContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #1a1a1a;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #1a1a1a;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.sliderValue {
+  color: #1a1a1a;
+  font-size: 14px;
+  min-width: 50px;
+  text-align: right;
+  font-weight: 500;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #1a1a1a;
+  font-size: 14px;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  accent-color: #1a1a1a;
+  cursor: pointer;
+}

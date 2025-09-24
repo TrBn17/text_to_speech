@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(python:*)",
+      "Bash(uvicorn:*)",
+      "Bash(curl:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(tasklist)",
+      "Bash(npm start)",
+      "WebFetch(domain:platform.openai.com)",
+      "WebSearch",
+      "Bash(npm run build:*)",
+      "Bash(set)",
+      "Bash(pip install:*)",
+      "Bash(dir \"C:\\Users\\Hi\\text_to_speech\\frontend\\src\\components\")",
+      "WebFetch(domain:ai.google.dev)",
+      "Bash(find:*)",
+      "Bash(del \"C:\\Users\\Hi\\text_to_speech\\project\\src\\app\\services\\automation\\.env\")",
+      "Bash(timeout:*)",
+      "Bash(del \"C:\\Users\\Hi\\text_to_speech\\project\\src\\app\\core\\openai_service.py\")",
+      "Bash(playwright install)",
+      "Bash(dir:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "WebFetch(domain:reactbits.dev)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

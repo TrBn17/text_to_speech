@@ -1,0 +1,48 @@
+{
+  "notebooklm": {
+    "create_notebook": "mat-card-content:has-text('Create new notebook'), [aria-label*='Create new notebook'], .create-notebook-card, .mat-card-content",
+    "copied_text": "span:has-text('Copied text'), [data-testid*='copied-text'], .copied-text-option",
+    "paste_text_area": "div[role='dialog'] textarea[placeholder*='Paste text here'], div[role='dialog'] textarea, .mat-dialog-container textarea, textarea[placeholder*='Paste text here'], textarea[placeholder*='paste text'], textarea[placeholder*='Paste your copied text'], textarea:visible",
+    "insert_button": "div[role='dialog'] button:has-text('Insert'), .mat-dialog-container button:has-text('Insert'), button:has-text('Insert'):visible, div[role='dialog'] button[type='submit'], .mat-dialog-container button.mat-primary",
+    "audio_magic_eraser": "span:has-text('audio_magic_eraser edit'), [aria-label*='audio magic eraser'], .audio-edit-button",
+    "general_span": "span:not([style*='display: none'])",
+    "submit_button": "button[type='submit'], .submit-btn, [aria-label*='submit']",
+    "auth": {
+      "try_again_button": "button:has-text('Try again'), [aria-label*='Try again'], .try-again-btn",
+      "sign_in_button": "button:has-text('Sign in'), [aria-label*='Sign in'], .sign-in-btn",
+      "email_input": "#identifierId, input[name='identifier'], input.whsOnd.zHQkBf[type='email'], input[aria-label*='Email'], input[autocomplete='username']",
+      "password_input": "input[name='Passwd'], input.whsOnd.zHQkBf[type='password'], input[aria-label*='password'], input[autocomplete='current-password']",
+      "email_next_button": "#identifierNext, button.VfPpkd-LgbsSe[jsname='LgbsSe']:has-text('Next'), button.VfPpkd-LgbsSe[jsname='LgbsSe'], button:has-text('Next'), .VfPpkd-LgbsSe.VfPpkd-LgbsSe-OWXEXe-k8QpJ",
+      "password_next_button": "#passwordNext, button.VfPpkd-LgbsSe[jsname='LgbsSe']:has-text('Next'), button.VfPpkd-LgbsSe[jsname='LgbsSe'], button:has-text('Next'), .VfPpkd-LgbsSe.VfPpkd-LgbsSe-OWXEXe-k8QpJ",
+      "next_button": "button.VfPpkd-LgbsSe[jsname='LgbsSe']:has-text('Next'), button.VfPpkd-LgbsSe[jsname='LgbsSe'], button:has-text('Next'), button[aria-label*='Next']",
+      "continue_button": "button:has-text('Continue'), [aria-label*='Continue']",
+      "error_message": ".error-message, [role='alert'], .warning, .dEOOab",
+      "login_form": "form, .login-form, #gaia_loginform, .dEOOab"
+    },
+    "wait_elements": {
+      "page_load": "body",
+      "content_ready": ".content-area, main, .notebook-container",
+      "loading_spinner": ".loading, .spinner, [data-testid='loading']",
+      "auth_page": ".signin-card, .login-container, #gaia_loginform"
+    },
+    "navigation": {
+      "home_url": "https://notebooklm.google.com/",
+      "auth_patterns": ["accounts.google.com", "signin", "login"]
+    },
+    "timeouts": {
+      "short_wait": 2000,
+      "medium_wait": 5000,
+      "long_wait": 15000,
+      "auth_timeout": 60000,
+      "selector_timeout": 10000,
+      "audio_generation_timeout": 900000
+    },
+    "audio_workflow": {
+      "audio_overview_button": "span:has-text('Audio Overview'), .audio-overview, [aria-label*='Audio Overview']",
+      "generated_audio_file": "div:has-text('Digital Fossil'), span:has-text('Digital Fossil'), div:has-text('hosts'), span:has-text('hosts')",
+      "interactive_button": "button:has-text('Interactive'), [aria-label*='Interactive'], .artifact-action-button-extended:has-text('Interactive')",
+      "download_audio_button": "a[aria-label*='Download audio overview'], button:has-text('Download'), [href*='audio'], [download*='audio']",
+      "audio_generation_indicators": "[class*='digital'], [class*='fossil'], div:has-text('Digital Fossil'), div:has-text('hosts')"
+    }
+  }
+}

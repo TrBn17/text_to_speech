@@ -69,3 +69,25 @@ Thumbs.db
 *~
 
 .env
+.frontend/.env
+node_modules/
+frontend/node_modules/
+frontend/package-lock.json
+
+# Local environment files (allow example files)
+.env*
+!.env.example
+
+# Local/temporary config and tooling
+.claude/
+*.local.json
+*.local.*
+
+# Databases
+*.sqlite3
+*.db
+*.env
+# Caches and packaging artifacts
+.cache/
+pip-wheel-metadata/
+.python-version

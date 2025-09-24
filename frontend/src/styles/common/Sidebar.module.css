@@ -1,0 +1,56 @@
+.sidebar {
+  width: 280px;
+  background: rgba(255, 255, 255, 0.95);
+  border-right: 2px solid rgba(26, 26, 26, 0.1);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  backdrop-filter: blur(10px);
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+}
+
+.sidebarHeader {
+  padding: 1.5rem 1rem;
+  border-bottom: 2px solid rgba(26, 26, 26, 0.1);
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.sidebarTitle {
+  color: #1a1a1a;
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sidebarContent {
+  flex: 1;
+  padding: 1.5rem 1rem;
+  overflow-y: auto;
+  background: rgba(248, 250, 252, 0.8);
+}
+
+/* Scrollbar Styling */
+.sidebarContent::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebarContent::-webkit-scrollbar-track {
+  background: rgba(248, 250, 252, 0.8);
+  border-radius: 10px;
+}
+
+.sidebarContent::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #94a3b8, #64748b);
+  border-radius: 10px;
+}
+
+.sidebarContent::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #64748b, #475569);
+}
