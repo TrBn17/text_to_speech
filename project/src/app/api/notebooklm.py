@@ -184,11 +184,6 @@ async def generate_audio_from_text(request: NotebookLMRequest):
     except Exception as e:
         error_message = (
             f"Failed to generate audio: {str(e)}\n\n"
-            "💡 You can manually use NotebookLM:\n"
-            "1. Go to https://notebooklm.google.com/\n"
-            "2. Create a new notebook and paste your text\n"
-            "3. Generate an Audio Overview\n"
-            "4. Download the audio file"
         )
         raise HTTPException(
             status_code=500,
