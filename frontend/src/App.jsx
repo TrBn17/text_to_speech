@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
+
 import ChatInterface from './components/ChatInterface';
 import TextToSpeech from './components/TextToSpeech';
 import AudioManager from './components/AudioManager';
 import AboutUs from './components/AboutUs';
 import NotificationManager, { useNotifications } from './components/common/NotificationManager';
-// import { useHealthCheck, useApiInfo } from './hooks/useApi';
 import env from './config/environment';
 import styles from './styles/App.module.css';
 

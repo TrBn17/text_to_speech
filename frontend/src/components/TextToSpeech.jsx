@@ -1,14 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
+
 import { useTextToSpeech } from '../hooks/useApi';
 import { useTTSModels } from '../hooks/useModels';
 import { apiService } from '../services/api';
 import env from '../config/environment';
+import styles from '../styles/TextToSpeech.module.css';
+
 import Sidebar from './common/Sidebar';
 import { SettingsSection } from './common/SettingsSection';
 import { Select, Textarea, Slider } from './common/FormControls';
 import ProgressBar from './common/ProgressBar';
 import NotificationManager, { useNotifications } from './common/NotificationManager';
-import styles from '../styles/TextToSpeech.module.css';
 
 const TextToSpeech = ({ generatedText }) => {
   const [text, setText] = useState('');

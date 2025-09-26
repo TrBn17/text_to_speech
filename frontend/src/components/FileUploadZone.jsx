@@ -1,5 +1,7 @@
 import React from 'react';
+
 import { useImageDragDrop, useImagePreviews } from '../hooks/useImageUpload';
+
 import styles from './FileUploadZone.module.css';
 
 const FileUploadZone = ({ 

@@ -1,16 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+
 import { useTextGeneration, useStreamingTextGeneration } from '../hooks/useApi';
 import { useTextGenerationModels } from '../hooks/useModels';
 import { useImagePaste } from '../hooks/useImageUpload';
 import env from '../config/environment';
+import styles from '../styles/ChatInterface.module.css';
+
 import Sidebar from './common/Sidebar';
 import { SettingsSection } from './common/SettingsSection';
 import { Select, Input, Textarea, Slider, CheckboxLabel } from './common/FormControls';
 import AutoResizeTextarea from './common/AutoResizeTextarea';
 import TypingAnimation from './common/TypingAnimation';
 import FileUploadZone from './FileUploadZone';
-import styles from '../styles/ChatInterface.module.css';
 
 const ChatInterface = ({ onTextGenerated, notify }) => {
   const [messages, setMessages] = useState([]);
