@@ -9,7 +9,7 @@ import { SettingsSection } from './common/SettingsSection';
 import { Select, Input, Textarea, Slider, CheckboxLabel } from './common/FormControls';
 import AutoResizeTextarea from './common/AutoResizeTextarea';
 import TypingAnimation from './common/TypingAnimation';
-import ImageUploadZone from './ImageUploadZone';
+import FileUploadZone from './FileUploadZone';
 import styles from '../styles/ChatInterface.module.css';
 
 const ChatInterface = ({ onTextGenerated, notify }) => {
@@ -45,13 +45,13 @@ const ChatInterface = ({ onTextGenerated, notify }) => {
   } = useStreamingTextGeneration();
 
   // Image paste hook
-  const { pastedImages, clearPastedImages } = useImagePaste((newImages) => {
-    setFiles(prev => [...prev, ...newImages]);
+  const { clearPastedImages } = useImagePaste((newFiles) => {
+    setFiles(prev => [...prev, ...newFiles]);
     setShowImageUpload(true);
     
     // Show notification
     if (notify) {
-      notify.success(`Đã paste ${newImages.length} ảnh từ clipboard!`, {
+      notify.success(`Đã paste ${newFiles.length} file từ clipboard!`, {
         duration: 3000
       });
     }
@@ -105,54 +105,34 @@ const ChatInterface = ({ onTextGenerated, notify }) => {
     }
   }, [isComplete, content, usage, streamingMode, onTextGenerated, resetStream]);
 
-  const handleFileChange = (e) => {
-    const selectedFiles = Array.from(e.target.files);
-
-    // Validate file count
-    if (selectedFiles.length > env.upload.maxFiles) {
-      alert(`Tối đa ${env.upload.maxFiles} tập tin được cho phép. Đã chọn: ${selectedFiles.length}`);
-      return;
-    }
-
-    // Validate file sizes
-    const oversizedFiles = selectedFiles.filter(file => file.size > env.upload.maxFileSize);
-    if (oversizedFiles.length > 0) {
-      const maxSizeMB = (env.upload.maxFileSize / 1024 / 1024).toFixed(1);
-      alert(`Tập tin quá lớn (tối đa: ${maxSizeMB}MB): ${oversizedFiles.map(f => f.name).join(', ')}`);
-      return;
-    }
-
-    setFiles(selectedFiles);
-  };
-
-  // Handler for ImageUploadZone
-  const handleImagesAdd = (newImages) => {
-    const validImages = newImages.slice(0, env.upload.maxFiles);
+  // Handler for FileUploadZone
+  const handleImagesAdd = (newFiles) => {
+    const validFiles = newFiles.slice(0, env.upload.maxFiles);
     
     // Validate file sizes
-    const oversizedFiles = validImages.filter(file => file.size > env.upload.maxFileSize);
+    const oversizedFiles = validFiles.filter(file => file.size > env.upload.maxFileSize);
     if (oversizedFiles.length > 0) {
       const maxSizeMB = (env.upload.maxFileSize / 1024 / 1024).toFixed(1);
-      const errorMessage = `Một số ảnh quá lớn (tối đa: ${maxSizeMB}MB): ${oversizedFiles.map(f => f.name).join(', ')}`;
+      const errorMessage = `Một số file quá lớn (tối đa: ${maxSizeMB}MB): ${oversizedFiles.map(f => f.name).join(', ')}`;
       
       if (notify) {
-        notify.error(errorMessage, { duration: 6000 });
+        notify.warning(errorMessage, { duration: 6000 });
       } else {
         alert(errorMessage);
       }
       
       // Filter out oversized files
-      const validSizedImages = validImages.filter(file => file.size <= env.upload.maxFileSize);
-      setFiles(prev => [...prev, ...validSizedImages]);
+      const validSizedFiles = validFiles.filter(file => file.size <= env.upload.maxFileSize);
+      setFiles(prev => [...prev, ...validSizedFiles]);
       
-      if (validSizedImages.length > 0 && notify) {
-        notify.success(`Đã thêm ${validSizedImages.length} ảnh hợp lệ`);
+      if (validSizedFiles.length > 0 && notify) {
+        notify.success(`Đã thêm ${validSizedFiles.length} file hợp lệ`);
       }
     } else {
-      setFiles(prev => [...prev, ...validImages]);
+      setFiles(prev => [...prev, ...validFiles]);
       
       if (notify) {
-        notify.success(`Đã thêm ${validImages.length} ảnh!`);
+        notify.success(`Đã thêm ${validFiles.length} file!`);
       }
     }
     
@@ -471,9 +451,9 @@ const ChatInterface = ({ onTextGenerated, notify }) => {
 
         {/* Input Form */}
         <form onSubmit={handleSubmit} className={styles.inputForm}>
-          {/* Image Upload Zone */}
+          {/* File Upload Zone */}
           {showImageUpload && (
-            <ImageUploadZone
+            <FileUploadZone
               files={files}
               onFilesAdd={handleImagesAdd}
               onFileRemove={handleRemoveFile}
@@ -502,22 +482,22 @@ const ChatInterface = ({ onTextGenerated, notify }) => {
           )}
 
           <div className={styles.inputContainer}>
-            {/* Image Upload Toggle Button */}
+            {/* File Upload Toggle Button */}
             <button
               type="button"
               onClick={handleToggleImageUpload}
               className={`${styles.fileButton} ${showImageUpload ? styles.active : ''}`}
               disabled={!env.features.fileUpload || currentLoading}
-              title={showImageUpload ? "Ẩn khu vực upload ảnh" : "Hiện khu vực upload ảnh"}
+              title={showImageUpload ? "Ẩn khu vực upload file" : "Hiện khu vực upload file"}
             >
-              {showImageUpload ? '🖼️' : '📷'}
+              {showImageUpload ? '�' : '�'}
             </button>
 
             <AutoResizeTextarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               placeholder={showImageUpload ? 
-                "Mô tả những gì bạn muốn phân tích về các ảnh... (Shift+Enter để xuống dòng)" :
+                "Mô tả những gì bạn muốn phân tích về các file... (Shift+Enter để xuống dòng)" :
                 "Gõ tin nhắn của bạn tại đây... (Shift+Enter để xuống dòng)"
               }
               className={styles.messageInput}
@@ -541,10 +521,10 @@ const ChatInterface = ({ onTextGenerated, notify }) => {
             </button>
           </div>
 
-          {/* Image Upload Hint */}
+          {/* Upload Hint */}
           {showImageUpload && (
             <div className={styles.imageUploadHint}>
-              💡 Bạn có thể <strong>paste ảnh</strong> từ clipboard bằng <kbd>Ctrl+V</kbd> hoặc <strong>kéo thả</strong> ảnh vào khu vực bên trên
+              💡 Bạn có thể <strong>paste ảnh</strong> từ clipboard bằng <kbd>Ctrl+V</kbd> hoặc <strong>kéo thả</strong> file vào khu vực bên trên
             </div>
           )}
 

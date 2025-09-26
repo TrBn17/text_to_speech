@@ -70,9 +70,9 @@ export const useImagePaste = (onImagesAdd) => {
 };
 
 /**
- * Hook để xử lý drag and drop ảnh
+ * Hook để xử lý drag and drop files (không chỉ ảnh)
  */
-export const useImageDragDrop = (onImagesAdd) => {
+export const useImageDragDrop = (onFilesAdd) => {
   const [isDragOver, setIsDragOver] = useState(false);
 
   const handleDragOver = useCallback((event) => {
@@ -93,12 +93,11 @@ export const useImageDragDrop = (onImagesAdd) => {
     setIsDragOver(false);
 
     const files = Array.from(event.dataTransfer.files);
-    const imageFiles = files.filter(file => file.type.startsWith('image/'));
-
-    if (imageFiles.length > 0 && onImagesAdd) {
-      onImagesAdd(imageFiles);
+    // Chấp nhận tất cả files, không chỉ ảnh
+    if (files.length > 0 && onFilesAdd) {
+      onFilesAdd(files);
     }
-  }, [onImagesAdd]);
+  }, [onFilesAdd]);
 
   const dragProps = {
     onDragOver: handleDragOver,
