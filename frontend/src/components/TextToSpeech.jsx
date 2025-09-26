@@ -149,7 +149,7 @@ const TextToSpeech = ({ generatedText }) => {
     setProgress(0);
     setProgressStatus('preparing');
     setCurrentStep('Preparing content for processing...');
-    setEstimatedTime('5-15 mins');
+    setEstimatedTime('5-20 mins');
 
     // Show initial notification
     const processingNotificationId = notify.processing('Starting audio generation...', {

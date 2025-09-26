@@ -385,8 +385,9 @@
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
-  background: rgba(26, 26, 26, 0.8);
+  background: rgba(26, 26, 26, 0.9);
   color: white;
+  z-index: 10;
   border: none;
   padding: 0.5rem;
   border-radius: 6px;

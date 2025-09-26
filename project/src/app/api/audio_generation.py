@@ -107,7 +107,7 @@ async def generate_audio_from_text(request: NotebookLMRequest):
                 result = run_notebooklm_automation(
                     content_source=custom_text,
                     debug_mode=False,
-                    max_wait_minutes=15  # Increase timeout to 15 minutes
+                    max_wait_minutes=20  # Increase timeout to 20 minutes
                 )
                 print(f"🎯 Automation completed with result: {result}")
                 return result

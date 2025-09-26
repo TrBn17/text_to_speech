@@ -1,6 +1,7 @@
 """
 Gemini Text Service - Single responsibility: Handle text generation only
 """
+import os
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 
@@ -52,6 +53,42 @@ class GeminiTextService:
             else:
                 return await self._generate_new_with_files(
                     prompt, files, model, system_prompt, temperature, max_tokens)
+
+        except Exception as e:
+            return self._create_error_response(str(e), model)
+
+    async def generate_text_with_multiple_images(self, prompt: str, image_paths: List[str],
+                                               model: str = "gemini-2.0-flash", system_prompt: str = "",
+                                               temperature: float = 0.7, max_tokens: int = 100) -> Dict[str, Any]:
+        """Generate text with multiple image attachments - optimized for images"""
+        try:
+            # Validate and filter image files
+            validation_result = self.file_uploader.validate_image_files(image_paths)
+            
+            if not validation_result["valid_files"]:
+                return self._create_error_response(
+                    f"No valid image files found. Errors: {validation_result['invalid_files']}", 
+                    model
+                )
+
+            valid_images = validation_result["valid_files"]
+            
+            # Create file info list for valid images
+            files = []
+            for image_path in valid_images:
+                files.append({
+                    'file_path': image_path,
+                    'mime_type': self.file_uploader._detect_mime_type(image_path),
+                    'filename': os.path.basename(image_path)
+                })
+
+            # Use batch upload with method selection
+            if self.legacy_mode:
+                return await self._generate_legacy_with_files(
+                    prompt, files, model, system_prompt, temperature, max_tokens)
+            else:
+                return await self._generate_new_with_multiple_images(
+                    prompt, files, model, system_prompt, temperature, max_tokens, validation_result)
 
         except Exception as e:
             return self._create_error_response(str(e), model)
@@ -126,6 +163,70 @@ class GeminiTextService:
         )
 
         return self._create_success_response(response, model)
+
+    async def _generate_new_with_multiple_images(self, prompt: str, files: List[Dict[str, Any]],
+                                               model: str, system_prompt: str, temperature: float,
+                                               max_tokens: int, validation_result: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate text using new SDK with multiple images - optimized batch processing"""
+        contents = [prompt]
+
+        # Extract file paths and mime types
+        file_paths = [f['file_path'] for f in files]
+        mime_types = [f['mime_type'] for f in files]
+
+        # Use batch upload with method selection for efficiency
+        batch_result = self.file_uploader.batch_upload_with_method_selection(file_paths, mime_types)
+
+        if not batch_result["success"]:
+            contents.append(f"Error in batch upload: {batch_result.get('error', 'Unknown error')}")
+        else:
+            # Add inline parts
+            if "inline_results" in batch_result and batch_result["inline_results"]:
+                inline_data = batch_result["inline_results"]
+                if inline_data.get("success") and "inline_parts" in inline_data:
+                    for part_info in inline_data["inline_parts"]:
+                        contents.append(part_info["part"])
+                        filename = os.path.basename(part_info["file_path"])
+                        contents.append(f"Analyze this image: {filename}")
+
+            # Add uploaded files
+            if "upload_results" in batch_result and batch_result["upload_results"]:
+                upload_data = batch_result["upload_results"]
+                if upload_data.get("success") and "uploaded_files" in upload_data:
+                    for upload_info in upload_data["uploaded_files"]:
+                        contents.append(upload_info["file"])
+                        filename = os.path.basename(upload_info["file_path"])
+                        contents.append(f"Analyze this image: {filename}")
+
+        # Add information about any invalid files
+        if validation_result["invalid_files"]:
+            invalid_summary = f"Note: {len(validation_result['invalid_files'])} files were skipped due to validation errors."
+            contents.append(invalid_summary)
+
+        config = types.GenerateContentConfig(
+            temperature=temperature,
+            max_output_tokens=max_tokens,
+        )
+
+        if system_prompt:
+            config.system_instruction = system_prompt
+
+        response = self.client.models.generate_content(
+            model=model,
+            contents=contents,
+            config=config
+        )
+
+        # Create enhanced response with batch info
+        result = self._create_success_response(response, model)
+        result["batch_info"] = {
+            "total_files_requested": len(file_paths),
+            "files_processed": batch_result.get("summary", {}).get("total_files", 0),
+            "validation_summary": validation_result["summary"],
+            "batch_summary": batch_result.get("summary", {})
+        }
+
+        return result
 
     async def _generate_legacy_text_only(self, prompt: str, model: str, system_prompt: str,
                                        temperature: float, max_tokens: int) -> Dict[str, Any]:
