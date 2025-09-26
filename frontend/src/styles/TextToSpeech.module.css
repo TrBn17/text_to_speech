@@ -63,6 +63,24 @@
 
 .settingGroup {
   margin-bottom: 1.25rem;
+  position: relative;
+}
+
+.settingGroup.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.lockIcon {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(107, 114, 128, 0.8);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  z-index: 2;
 }
 
 .settingGroup label {

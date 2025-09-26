@@ -91,3 +91,4 @@ frontend/package-lock.json
 .cache/
 pip-wheel-metadata/
 .python-version
+.claude/

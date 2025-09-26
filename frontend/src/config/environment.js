@@ -49,8 +49,8 @@ export const env = {
 
   // Default Settings
   defaults: {
-    maxTokens: getEnvVar('REACT_APP_DEFAULT_MAX_TOKENS', 500),
-    temperature: parseFloat(getEnvVar('REACT_APP_DEFAULT_TEMPERATURE', '0.7')),
+    maxTokens: getEnvVar('REACT_APP_DEFAULT_MAX_TOKENS', 16384),
+    temperature: parseFloat(getEnvVar('REACT_APP_DEFAULT_TEMPERATURE', '0.3')),
     topP: parseFloat(getEnvVar('REACT_APP_DEFAULT_TOP_P', '0.9')),
     tts: {
       voice: getEnvVar('REACT_APP_DEFAULT_TTS_VOICE', 'alloy'),

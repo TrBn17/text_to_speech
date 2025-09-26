@@ -12,7 +12,7 @@
 }
 
 .sidebarHeader {
-  padding: 1.5rem 1rem;
+  padding: 1rem;
   border-bottom: 2px solid rgba(26, 26, 26, 0.1);
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
 }
@@ -31,7 +31,7 @@
 
 .sidebarContent {
   flex: 1;
-  padding: 1.5rem 1rem;
+  padding: 1rem;
   overflow-y: auto;
   background: rgba(248, 250, 252, 0.8);
 }

@@ -168,7 +168,6 @@ async def generate_audio_from_text(request: NotebookLMRequest):
                     "• Network connectivity issues\n"
                     "• Daily usage limits reached\n\n"
                     f"{setup_instructions}"
-                    "💡 Manual alternative:\n"
                     "1. Visit https://notebooklm.google.com/\n"
                     "2. Create a new notebook\n"
                     "3. Add your text as 'Copied text'\n"

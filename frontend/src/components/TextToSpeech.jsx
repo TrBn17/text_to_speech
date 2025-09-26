@@ -83,7 +83,7 @@ const TextToSpeech = ({ generatedText }) => {
     e.preventDefault();
 
     if (!text.trim()) {
-      alert('Please enter some text');
+      alert('Vui lòng nhập một số văn bản');
       return;
     }
 
@@ -129,7 +129,7 @@ const TextToSpeech = ({ generatedText }) => {
   // NotebookLM functions
   const handleGenerateNotebookAudio = async () => {
     if (!customText.trim()) {
-      setNotebookError('Please enter some text to convert to audio');
+      setNotebookError('Vui lòng nhập một số văn bản để chuyển đổi thành âm thanh');
       return;
     }
 
@@ -150,7 +150,7 @@ const TextToSpeech = ({ generatedText }) => {
       
     } catch (err) {
       console.error('❌ NotebookLM generation failed:', err);
-      setNotebookError(err.message || 'Failed to generate audio');
+      setNotebookError(err.message || 'Không thể tạo âm thanh');
     } finally {
       setIsGeneratingNotebook(false);
     }
@@ -164,17 +164,17 @@ const TextToSpeech = ({ generatedText }) => {
   };
 
   const sampleTexts = [
-    "Hello, this is a sample text for text-to-speech conversion.",
     "Xin chào, đây là văn bản mẫu để chuyển đổi văn bản thành giọng nói.",
-    "The quick brown fox jumps over the lazy dog.",
-    "Artificial intelligence is transforming the way we work and live.",
-    "Welcome to our text-to-speech demonstration. Please enjoy the audio output."
+    "Con cáo nâu nhanh nhẹn nhảy qua con chó lười biếng.",
+    "Trí tuệ nhân tạo đang thay đổi cách chúng ta làm việc và sống.",
+    "Chào mừng đến với màn trình diễn chuyển văn bản thành giọng nói của chúng tôi.",
+    "Công nghệ này giúp chúng ta có thể nghe nội dung thay vì chỉ đọc."
   ];
 
   return (
     <div className={styles.textToSpeech}>
       {/* Left Sidebar */}
-      <Sidebar title="🎙️ Audio Settings">
+      <Sidebar title="Cài đặt âm thanh">
         {/* Tab Navigation */}
         <SettingsSection title="">
           <div className={styles.tabNavigation}>
@@ -182,13 +182,13 @@ const TextToSpeech = ({ generatedText }) => {
               onClick={() => setActiveTab('tts')}
               className={`${styles.tabButton} ${activeTab === 'tts' ? styles.active : ''}`}
             >
-              🎵 Text-to-Speech
+              Sử dụng API
             </button>
             <button
               onClick={() => setActiveTab('notebooklm')}
               className={`${styles.tabButton} ${activeTab === 'notebooklm' ? styles.active : ''}`}
             >
-              🎙️ Conversation Audio
+              Âm thanh hội thoại
             </button>
           </div>
         </SettingsSection>
@@ -196,9 +196,9 @@ const TextToSpeech = ({ generatedText }) => {
           {/* Settings based on active tab */}
           {activeTab === 'tts' && (
             <>
-              <SettingsSection title="Provider Configuration">
+              <SettingsSection title="Cấu hình nhà cung cấp">
                 <div className={styles.settingGroup}>
-                  <label htmlFor="provider">Provider</label>
+                  <label htmlFor="provider">Nhà cung cấp</label>
                   <Select
                     value={provider}
                     onChange={(e) => {
@@ -228,7 +228,7 @@ const TextToSpeech = ({ generatedText }) => {
                 </div>
 
                 <div className={styles.settingGroup}>
-                  <label htmlFor="voice">Voice</label>
+                  <label htmlFor="voice">Giọng nói</label>
                   <Select
                     value={voice}
                     onChange={(e) => setVoice(e.target.value)}
@@ -241,7 +241,7 @@ const TextToSpeech = ({ generatedText }) => {
                 </div>
 
                 <div className={styles.settingGroup}>
-                  <label>Speed ({speed}x)</label>
+                  <label>Tốc độ ({speed}x)</label>
                   <Slider
                     min={0.25}
                     max={4}
@@ -259,19 +259,19 @@ const TextToSpeech = ({ generatedText }) => {
                   onClick={() => setShowAdvanced(!showAdvanced)}
                   className={styles.advancedToggle}
                 >
-                  {showAdvanced ? '🔽 Hide Advanced' : '🔧 Advanced Options'}
+                  {showAdvanced ? 'Ẩn tùy chọn nâng cao' : 'Tùy chọn nâng cao'}
                 </button>
 
                 {showAdvanced && (
-                  <SettingsSection title="Advanced Settings">
+                  <SettingsSection title="Cài đặt nâng cao">
                     <div className={styles.settingGroup}>
-                      <label htmlFor="model">Model</label>
+                      <label htmlFor="model">Mô hình</label>
                       <Select
                         value={model}
                         onChange={(e) => setModel(e.target.value)}
                         disabled={modelsLoading}
                         options={[
-                          { value: "", label: "Default Model" },
+                          { value: "", label: "Mô hình mặc định" },
                           ...getModelsForProvider().map((modelOption) => ({
                             value: modelOption.value,
                             label: modelOption.label
@@ -281,7 +281,7 @@ const TextToSpeech = ({ generatedText }) => {
                     </div>
 
                     <div className={styles.settingGroup}>
-                      <label htmlFor="responseFormat">Audio Format</label>
+                      <label htmlFor="responseFormat">Định dạng âm thanh</label>
                       <Select
                         value={responseFormat}
                         onChange={(e) => setResponseFormat(e.target.value)}
@@ -295,20 +295,20 @@ const TextToSpeech = ({ generatedText }) => {
                     </div>
 
                     <div className={styles.settingGroup}>
-                      <label htmlFor="languageCode">Language</label>
+                      <label htmlFor="languageCode">Ngôn ngữ</label>
                       <Select
                         value={languageCode}
                         onChange={(e) => setLanguageCode(e.target.value)}
                         options={[
                           { value: "en-US", label: "English (US)" },
                           { value: "en-GB", label: "English (UK)" },
-                          { value: "vi-VN", label: "Vietnamese" },
-                          { value: "ja-JP", label: "Japanese" },
-                          { value: "ko-KR", label: "Korean" },
-                          { value: "zh-CN", label: "Chinese (Simplified)" },
-                          { value: "fr-FR", label: "French" },
-                          { value: "de-DE", label: "German" },
-                          { value: "es-ES", label: "Spanish" }
+                          { value: "vi-VN", label: "Tiếng Việt" },
+                          { value: "ja-JP", label: "Tiếng Nhật" },
+                          { value: "ko-KR", label: "Tiếng Hàn" },
+                          { value: "zh-CN", label: "Tiếng Trung (Giản thể)" },
+                          { value: "fr-FR", label: "Tiếng Pháp" },
+                          { value: "de-DE", label: "Tiếng Đức" },
+                          { value: "es-ES", label: "Tiếng Tây Ban Nha" }
                         ]}
                       />
                     </div>
@@ -316,11 +316,11 @@ const TextToSpeech = ({ generatedText }) => {
                     {/* Provider-specific options */}
                     {provider === 'openai' && (
                       <div className={styles.settingGroup}>
-                        <label htmlFor="instructions">Instructions (OpenAI)</label>
+                        <label htmlFor="instructions">Hướng dẫn (OpenAI)</label>
                         <Textarea
                           value={instructions}
                           onChange={(e) => setInstructions(e.target.value)}
-                          placeholder="Additional instructions for voice style..."
+                          placeholder="Hướng dẫn bổ sung cho phong cách giọng nói..."
                           rows={2}
                         />
                       </div>
@@ -328,11 +328,11 @@ const TextToSpeech = ({ generatedText }) => {
 
                     {(provider === 'google') && (
                       <div className={styles.settingGroup}>
-                        <label htmlFor="systemPrompt">System Prompt (Google)</label>
+                        <label htmlFor="systemPrompt">Lời nhắc hệ thống (Google)</label>
                         <Textarea
                           value={systemPrompt}
                           onChange={(e) => setSystemPrompt(e.target.value)}
-                          placeholder="System prompt for TTS style control..."
+                          placeholder="Lời nhắc hệ thống để điều khiển phong cách TTS..."
                           rows={2}
                         />
                       </div>
@@ -341,12 +341,12 @@ const TextToSpeech = ({ generatedText }) => {
                 )}
               </SettingsSection>
 
-              <SettingsSection title="Actions">
+              <SettingsSection title="Hành động">
                 <button
                   onClick={handleReset}
                   className={styles.clearButton}
                 >
-                  🗑️ Reset
+                  Đặt lại
                 </button>
               </SettingsSection>
             </>
@@ -354,11 +354,10 @@ const TextToSpeech = ({ generatedText }) => {
 
           {/* NotebookLM Settings */}
           {activeTab === 'notebooklm' && (
-            <SettingsSection title="Conversation Settings">
+            <SettingsSection title="Cài đặt hội thoại">
               <div className={styles.infoBox} style={{ marginTop: '1rem' }}>
-                <span>💡</span>
                 <div>
-                  <strong>NotebookLM:</strong> Converts your text into a natural conversation between two AI hosts.
+                  <strong>FoxAI Native:</strong> Chuyển đổi văn bản của bạn thành cuộc hội thoại tự nhiên giữa hai người dẫn chương trình AI.
                 </div>
               </div>
             </SettingsSection>
@@ -368,7 +367,7 @@ const TextToSpeech = ({ generatedText }) => {
       {/* Right Content Area */}
       <div className={styles.contentArea}>
         <div className={styles.contentHeader}>
-          <h1 className={styles.contentTitle}>Text-to-Conversation</h1>
+          <h1 className={styles.contentTitle}>Chuyển văn bản thành hội thoại</h1>
         </div>
 
         <div className={styles.contentBody}>
@@ -379,14 +378,14 @@ const TextToSpeech = ({ generatedText }) => {
                 {/* Text Input */}
                 <div className={styles.formGroup}>
                   <label htmlFor="text" className={styles.label}>
-                    Text to Convert
-                    {generatedText && <span className={styles.labelNote}> (Auto-populated)</span>}
+                    Văn bản cần chuyển đổi
+                    {generatedText && <span className={styles.labelNote}> (Tự động điền)</span>}
                   </label>
                   <textarea
                     id="text"
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    placeholder="Enter the text you want to convert to speech..."
+                    placeholder="Nhập văn bản bạn muốn chuyển đổi thành giọng nói..."
                     rows={8}
                     required
                     className={styles.textarea}
@@ -394,7 +393,7 @@ const TextToSpeech = ({ generatedText }) => {
 
                   {/* Sample Texts */}
                   <div className={styles.sampleTexts}>
-                    <div className={styles.sampleLabel}>Quick samples:</div>
+                    <div className={styles.sampleLabel}>Mẫu nhanh:</div>
                     <div className={styles.sampleButtons}>
                       {sampleTexts.map((sample, index) => (
                         <button
@@ -403,7 +402,7 @@ const TextToSpeech = ({ generatedText }) => {
                           onClick={() => setText(sample)}
                           className={styles.sampleButton}
                         >
-                          Sample {index + 1}
+                          Mẫu {index + 1}
                         </button>
                       ))}
                     </div>
@@ -420,10 +419,10 @@ const TextToSpeech = ({ generatedText }) => {
                     {loading ? (
                       <>
                         <span className={styles.loadingSpinner}></span>
-                        Converting...
+                        Đang chuyển đổi...
                       </>
                     ) : (
-                      '🎵 Convert to Speech'
+                      'Chuyển thành giọng nói'
                     )}
                   </button>
                 </div>
@@ -432,14 +431,14 @@ const TextToSpeech = ({ generatedText }) => {
               {/* Error Display */}
               {error && (
                 <div className={styles.error}>
-                  ❌ Error: {error}
+                  Lỗi: {error}
                 </div>
               )}
 
               {/* Results Display */}
               {result && (
                 <div className={styles.resultCard}>
-                  <h3 className={styles.resultTitle}>🎧 Audio Result</h3>
+                  <h3 className={styles.resultTitle}>Kết quả âm thanh</h3>
 
                   {result.success ? (
                     <div>
@@ -458,14 +457,14 @@ const TextToSpeech = ({ generatedText }) => {
                               onClick={handlePlayAudio}
                               className={styles.downloadButton}
                             >
-                              ▶️ Play Audio
+                              Phát âm thanh
                             </button>
 
                             <button
                               onClick={handleDownloadAudio}
                               className={styles.downloadButton}
                             >
-                              💾 Download MP3
+                              Tải xuống MP3
                             </button>
                           </div>
                         </div>
@@ -475,29 +474,29 @@ const TextToSpeech = ({ generatedText }) => {
                       <div className={styles.audioInfo}>
                         <div className={styles.infoGrid}>
                           <div className={styles.infoItem}>
-                            <strong>Voice:</strong> {result.voice}
+                            <strong>Giọng nói:</strong> {result.voice}
                           </div>
                           <div className={styles.infoItem}>
-                            <strong>Provider:</strong> {result.provider}
+                            <strong>Nhà cung cấp:</strong> {result.provider}
                           </div>
                           <div className={styles.infoItem}>
-                            <strong>Duration:</strong> {result.duration?.toFixed(1)}s
+                            <strong>Thời lượng:</strong> {result.duration?.toFixed(1)}s
                           </div>
                           <div className={styles.infoItem}>
-                            <strong>Format:</strong> {result.audio_format?.toUpperCase()}
+                            <strong>Định dạng:</strong> {result.audio_format?.toUpperCase()}
                           </div>
                         </div>
                       </div>
 
                       {/* Text Display */}
                       <div className={styles.convertedText}>
-                        <h4>📝 Converted Text:</h4>
+                        <h4>Văn bản đã chuyển đổi:</h4>
                         <p>{result.text}</p>
                       </div>
                     </div>
                   ) : (
                     <div className={styles.errorResult}>
-                      ❌ Conversion failed: {result.error}
+                      Chuyển đổi thất bại: {result.error}
                     </div>
                   )}
                 </div>
@@ -510,31 +509,31 @@ const TextToSpeech = ({ generatedText }) => {
             <form onSubmit={(e) => { e.preventDefault(); handleGenerateNotebookAudio(); }} className={styles.form}>
               {/* Custom Text Input */}
               <div className={styles.formGroup}>
-                <label htmlFor="customText" className={styles.label}>✏️ Text to Convert</label>
+                <label htmlFor="customText" className={styles.label}>Văn bản cần chuyển đổi</label>
                 <textarea
                   id="customText"
                   value={customText}
                   onChange={(e) => setCustomText(e.target.value)}
-                  placeholder="Paste your text here that you want to convert to conversation audio...
+                  placeholder="Dán văn bản của bạn vào đây để chuyển đổi thành âm thanh hội thoại...
 
-Example content:
-- Articles or blog posts
-- Research papers
-- Meeting notes
-- Educational content
-- Any text you want as a podcast conversation
+Nội dung ví dụ:
+- Bài viết hoặc blog
+- Báo cáo nghiên cứu
+- Ghi chú cuộc họp
+- Nội dung giáo dục
+- Bất kỳ văn bản nào bạn muốn thành podcast hội thoại
 
-The AI will create a natural conversation between two hosts discussing your content."
+AI sẽ tạo ra cuộc hội thoại tự nhiên giữa hai người dẫn chương trình thảo luận về nội dung của bạn."
                   rows={10}
                   className={styles.textarea}
                   disabled={isGeneratingNotebook}
                 />
                 <div className={styles.textStats}>
                   <small className={styles.textHelp}>
-                    Paste any text content to generate a conversation-style podcast
+                    Dán bất kỳ nội dung văn bản nào để tạo podcast theo phong cách hội thoại
                   </small>
                   <small className={`${styles.charCount} ${customText.length > 10000 ? styles.warning : ''}`}>
-                    {customText.length} characters {customText.length > 10000 && '(⚠️ Very long text)'}
+                    {customText.length} ký tự {customText.length > 10000 && '(⚠️ Văn bản rất dài)'}
                   </small>
                 </div>
               </div>
@@ -549,35 +548,24 @@ The AI will create a natural conversation between two hosts discussing your cont
                   {isGeneratingNotebook ? (
                     <>
                       <span className={styles.loadingSpinner}></span>
-                      Generating Audio... (This may take 5-15 minutes)
+                      Đang tạo âm thanh... (Có thể mất 5-15 phút)
                     </>
                   ) : (
-                    '🎙️ Generate Conversation Audio'
+                    'Tạo âm thanh hội thoại'
                   )}
                 </button>
               </div>
 
               {/* Info */}
               <div className={styles.infoBox}>
-                <span>💡</span>
                 <div>
-                  <strong>How it works:</strong> NotebookLM will take your text and create a natural conversation-style podcast between two AI hosts discussing the content.
+                  <strong>Cách hoạt động:</strong> Dán văn bản của bạn vào ô trên và nhấn "Generate Conversation Audio". Quá trình này sẽ tự động tạo ra một podcast phù hợp.
                 </div>
               </div>
-
-              {/* Warning */}
-              <div className={styles.warningBox}>
-                <span>⚠️</span>
-                <div>
-                  <strong>Important:</strong> This process will open a browser window and may take 5-15 minutes to complete.
-                </div>
-              </div>
-
-              {/* Manual Alternative */}
               <div className={styles.alternativeBox}>
                 <span>🛠️</span>
-                <div>
-                  <strong>Manual Alternative:</strong> If automation fails, you can:
+                {/* <div>
+                  <strong>Manual Alternative:</strong>:
                   <ol className={styles.manualSteps}>
                     <li>Visit <a href="https://notebooklm.google.com/" target="_blank" rel="noopener noreferrer">notebooklm.google.com</a></li>
                     <li>Create a new notebook</li>
@@ -585,7 +573,7 @@ The AI will create a natural conversation between two hosts discussing your cont
                     <li>Generate an "Audio Overview"</li>
                     <li>Download the generated audio file</li>
                   </ol>
-                </div>
+                </div> */}
               </div>
             </form>
           )}
@@ -594,9 +582,9 @@ The AI will create a natural conversation between two hosts discussing your cont
         {/* Loading Progress */}
         {isGeneratingNotebook && (
           <div className={styles.loadingCard}>
-            <h3 className={styles.resultTitle}>🤖 Generating Audio...</h3>
+            <h3 className={styles.resultTitle}>Đang tạo âm thanh...</h3>
             <p className={styles.loadingText}>
-              Browser automation in progress... Please wait patiently.
+              Tự động hóa trình duyệt đang diễn ra... Vui lòng đợi kiên nhẫn.
             </p>
           </div>
         )}
@@ -604,7 +592,7 @@ The AI will create a natural conversation between two hosts discussing your cont
         {/* Error Display */}
         {notebookError && (
           <div className={styles.error}>
-            <strong>❌ NotebookLM Error</strong>
+            <strong>Lỗi NotebookLM</strong>
             <div className={styles.errorContent}>
               {notebookError.split('\n').map((line, index) => (
                 <div key={index} className={styles.errorLine}>
@@ -618,12 +606,12 @@ The AI will create a natural conversation between two hosts discussing your cont
         {/* Success Result */}
         {notebookResult && notebookResult.success && (
           <div className={styles.success}>
-            <strong>✅ Audio Generated Successfully!</strong>
+            <strong>Tạo âm thanh thành công!</strong>
             <div className={styles.successDetails}>
-              <div>🎵 Audio File: <code>{notebookResult.audio_url}</code></div>
-              <div>⏱️ Processing Time: {formatProcessingTime(notebookResult.processing_time)}</div>
+              <div>Tệp âm thanh: <code>{notebookResult.audio_url}</code></div>
+              <div>Thời gian xử lý: {formatProcessingTime(notebookResult.processing_time)}</div>
               {notebookResult.text_info && (
-                <div>📄 Content: {notebookResult.text_info.content_length} characters</div>
+                <div>Nội dung: {notebookResult.text_info.content_length} ký tự</div>
               )}
             </div>
           </div>

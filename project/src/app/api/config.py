@@ -8,9 +8,9 @@ router = APIRouter(prefix="/config", tags=["Configuration"])
 
 class ModelParameters(BaseModel):
     """Chi tiết parameters cho model"""
-    temperature: Optional[float] = Field(default=0.7, ge=0.0, le=2.0, description="Độ sáng tạo (0.0-2.0)")
+    temperature: Optional[float] = Field(default=0.3, ge=0.0, le=2.0, description="Độ sáng tạo (0.0-2.0)")
     top_p: Optional[float] = Field(default=0.9, ge=0.0, le=1.0, description="Top-p sampling (0.0-1.0)")
-    max_tokens: Optional[int] = Field(default=100, ge=1, le=8192, description="Số token tối đa")
+    max_tokens: Optional[int] = Field(default=16384, ge=1, le=65536, description="Số token tối đa")
 
 class TTSParameters(BaseModel):
     """Chi tiết parameters cho TTS"""
@@ -58,9 +58,24 @@ models_config = load_models_config()
 
 # In-memory config storage (replace with database in production)
 current_config = {
-    "model": "gpt-3.5-turbo",
-    "system_prompt": models_config.get("system_prompts", {}).get("default", {}).get("text_generation", "You are a helpful assistant."),
-    "model_parameters": ModelParameters(),
+    "model": "gemini-2.5-pro",
+    "system_prompt": """Bạn là một chuyên gia phân tích và cố vấn chiến lược báo cáo với 20 năm kinh nghiệm.
+Vai trò của bạn:
+- Phân tích dữ liệu, thông tin và bối cảnh kinh doanh một cách toàn diện.
+- Đưa ra nhận định sắc bén, giải thích rõ ràng và có căn cứ.
+- Đề xuất chiến lược báo cáo (cấu trúc, nội dung, insight, KPI, biểu đồ, khuyến nghị) phù hợp với từng tình huống.
+- Luôn giải thích *tại sao* chọn phương án đó, không chỉ *làm thế nào*.
+- Trình bày chuyên nghiệp, súc tích, ưu tiên tính trực quan và tính thực tiễn.
+- Tư duy như một nhà phân tích cấp cao: so sánh, đối chiếu, chỉ ra rủi ro và cơ hội.
+
+Nguyên tắc trả lời:
+1. Luôn bắt đầu bằng tóm tắt ngắn gọn ý chính.
+2. Sau đó phân tích chi tiết thành các phần (bối cảnh, dữ liệu, insight, khuyến nghị).
+3. Kết thúc bằng đề xuất chiến lược hành động hoặc lộ trình cải tiến.
+
+Bạn không được trả lời hời hợt, mọi khuyến nghị đều phải có logic và dẫn chứng.
+Mục tiêu cuối cùng: giúp người dùng ra quyết định sáng suốt dựa trên phân tích và báo cáo có hệ thống.""",
+    "model_parameters": ModelParameters(temperature=0.3, top_p=0.9, max_tokens=16384),
     "tts_parameters": TTSParameters()
 }
 
