@@ -72,12 +72,20 @@ export const env = {
 
   // File Upload Configuration
   upload: {
-    maxFileSize: getEnvVar('REACT_APP_MAX_FILE_SIZE', 10485760), // 10MB
+    maxFileSize: getEnvVar('REACT_APP_MAX_FILE_SIZE', 50485760), // 50MB (increased for images)
     maxFiles: getEnvVar('REACT_APP_MAX_FILES', 10),
-    supportedTypes: getEnvVar('REACT_APP_SUPPORTED_FILE_TYPES', '.pdf,.docx,.doc,.txt,.png,.jpg,.jpeg,.bmp,.tiff'),
+    supportedTypes: getEnvVar('REACT_APP_SUPPORTED_FILE_TYPES', '.pdf,.docx,.doc,.txt,.png,.jpg,.jpeg,.gif,.bmp,.webp,.svg,.tiff,.ico'),
     get supportedTypesArray() {
       return this.supportedTypes.split(',').map(type => type.trim());
     },
+    // Image-specific configuration
+    images: {
+      maxFileSize: getEnvVar('REACT_APP_IMAGE_MAX_FILE_SIZE', 20971520), // 20MB for images
+      supportedTypes: '.png,.jpg,.jpeg,.gif,.bmp,.webp,.svg,.tiff,.ico',
+      get supportedTypesArray() {
+        return this.supportedTypes.split(',').map(type => type.trim());
+      }
+    }
   },
 
   // UI Configuration

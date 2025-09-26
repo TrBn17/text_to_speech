@@ -3,6 +3,7 @@ import ChatInterface from './components/ChatInterface';
 import TextToSpeech from './components/TextToSpeech';
 import AudioManager from './components/AudioManager';
 import AboutUs from './components/AboutUs';
+import NotificationManager, { useNotifications } from './components/common/NotificationManager';
 // import { useHealthCheck, useApiInfo } from './hooks/useApi';
 import env from './config/environment';
 import styles from './styles/App.module.css';
@@ -13,6 +14,10 @@ const foxaiLogo = '/static/logo/foxai-logo.png';
 function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [generatedText, setGeneratedText] = useState('');
+  
+  // Notification system
+  const { notifications, notify, removeNotification } = useNotifications();
+  
   // Health check and API info hooks (available for future use)
   // const { status: healthStatus } = useHealthCheck();
   // const { info: apiInfo } = useApiInfo();
@@ -40,12 +45,12 @@ function App() {
 
     // Pass different props based on the component
     if (activeTabData.id === 'generator') {
-      return <Component onTextGenerated={handleTextGenerated} />;
+      return <Component onTextGenerated={handleTextGenerated} notify={notify} />;
     } else if (activeTabData.id === 'tts') {
-      return <Component generatedText={generatedText} />;
+      return <Component generatedText={generatedText} notify={notify} />;
     }
 
-    return <Component />;
+    return <Component notify={notify} />;
   };
 
   const renderHomeContent = () => (
@@ -113,6 +118,12 @@ function App() {
 
   return (
     <div className={styles.app}>
+      {/* Notification Manager */}
+      <NotificationManager 
+        notifications={notifications} 
+        onRemove={removeNotification} 
+      />
+
       {/* Header with FOXAI logo and navigation tabs */}
       <div className={styles.chatTabSwitcher} data-active={activeTab}>
         {/* FOXAI Logo */}

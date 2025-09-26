@@ -1,0 +1,305 @@
+/* Image Upload Zone Styles */
+.imageUploadContainer {
+  margin: 10px 0;
+  width: 100%;
+}
+
+/* Drop Zone */
+.dropZone {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  background-color: #fafafa;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.dropZone:hover {
+  border-color: #007bff;
+  background-color: #f0f8ff;
+}
+
+.dropZone.dragOver {
+  border-color: #007bff;
+  background-color: #e6f3ff;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.3);
+}
+
+.dropZone.hasFiles {
+  border-style: solid;
+  background-color: #e8f5e8;
+  border-color: #28a745;
+}
+
+.dropZoneContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.dropZoneIcon {
+  font-size: 2.5em;
+  opacity: 0.6;
+}
+
+.dropZoneText {
+  color: #666;
+}
+
+.dropZoneText p {
+  margin: 4px 0;
+}
+
+.browseButton {
+  background: none;
+  border: none;
+  color: #007bff;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.browseButton:hover {
+  color: #0056b3;
+}
+
+.dropZoneDetails {
+  margin-top: 8px;
+  opacity: 0.7;
+}
+
+/* Preview Container */
+.imagePreviewsContainer {
+  margin-top: 15px;
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.previewsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.previewsHeader h4 {
+  margin: 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.warningText {
+  color: #dc3545;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* Loading State */
+.loadingPreviews {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  color: #666;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Image Previews Grid */
+.imagePreviews {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 15px;
+}
+
+.imagePreview {
+  display: flex;
+  flex-direction: column;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  overflow: hidden;
+  transition: transform 0.2s ease;
+}
+
+.imagePreview:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.imageContainer {
+  position: relative;
+  width: 100%;
+  height: 120px;
+  overflow: hidden;
+}
+
+.previewImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.removeButton {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(220, 53, 69, 0.9);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.removeButton:hover {
+  background: rgba(220, 53, 69, 1);
+}
+
+.imageInfo {
+  padding: 8px;
+  text-align: center;
+}
+
+.imageName {
+  font-size: 12px;
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 4px;
+}
+
+.imageSize {
+  font-size: 11px;
+  color: #666;
+}
+
+.sizeWarning {
+  font-size: 11px;
+  color: #dc3545;
+  font-weight: bold;
+  margin-top: 2px;
+}
+
+/* Paste Hint */
+.pasteHint {
+  margin-top: 15px;
+  padding: 10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 6px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.pasteHint kbd {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: bold;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .imagePreviews {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+  }
+  
+  .imageContainer {
+    height: 100px;
+  }
+  
+  .dropZoneIcon {
+    font-size: 2em;
+  }
+  
+  .dropZone {
+    padding: 15px;
+  }
+  
+  .previewsHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+  
+  .pasteHint {
+    font-size: 13px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .dropZone {
+    background-color: #2d3748;
+    border-color: #4a5568;
+    color: #e2e8f0;
+  }
+  
+  .dropZone:hover {
+    background-color: #374151;
+    border-color: #60a5fa;
+  }
+  
+  .dropZone.dragOver {
+    background-color: #1e3a8a;
+  }
+  
+  .dropZone.hasFiles {
+    background-color: #064e3b;
+    border-color: #10b981;
+  }
+  
+  .imagePreviewsContainer {
+    background: #1a202c;
+    border-color: #4a5568;
+  }
+  
+  .previewsHeader h4 {
+    color: #e2e8f0;
+  }
+  
+  .imagePreview {
+    background: #2d3748;
+    border-color: #4a5568;
+  }
+  
+  .imageName {
+    color: #e2e8f0;
+  }
+  
+  .imageSize {
+    color: #a0aec0;
+  }
+}

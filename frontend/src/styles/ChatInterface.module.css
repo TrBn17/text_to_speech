@@ -606,6 +606,18 @@
   box-shadow: 0 2px 8px rgba(26, 26, 26, 0.1);
 }
 
+.fileButton.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  border-color: #2563eb;
+}
+
+.fileButton.active:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(29, 78, 216, 0.3);
+}
+
 .fileButton::before {
   content: '';
   position: absolute;
@@ -631,6 +643,27 @@
 .fileButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Image Upload Hint */
+.imageUploadHint {
+  margin-top: 10px;
+  padding: 10px 15px;
+  background: linear-gradient(135deg, #e0f2fe 0%, #b3e5fc 100%);
+  border: 1px solid #81d4fa;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #0277bd;
+  text-align: center;
+}
+
+.imageUploadHint kbd {
+  background: rgba(2, 119, 189, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: bold;
+  border: 1px solid rgba(2, 119, 189, 0.2);
 }
 
 .messageInput {

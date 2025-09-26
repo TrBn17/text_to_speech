@@ -2,15 +2,17 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useTextGeneration, useStreamingTextGeneration } from '../hooks/useApi';
 import { useTextGenerationModels } from '../hooks/useModels';
+import { useImagePaste } from '../hooks/useImageUpload';
 import env from '../config/environment';
 import Sidebar from './common/Sidebar';
 import { SettingsSection } from './common/SettingsSection';
 import { Select, Input, Textarea, Slider, CheckboxLabel } from './common/FormControls';
 import AutoResizeTextarea from './common/AutoResizeTextarea';
 import TypingAnimation from './common/TypingAnimation';
+import ImageUploadZone from './ImageUploadZone';
 import styles from '../styles/ChatInterface.module.css';
 
-const ChatInterface = ({ onTextGenerated }) => {
+const ChatInterface = ({ onTextGenerated, notify }) => {
   const [messages, setMessages] = useState([]);
   const [prompt, setPrompt] = useState('');
   const [streamingMode, setStreamingMode] = useState(false);
@@ -21,9 +23,9 @@ const ChatInterface = ({ onTextGenerated }) => {
   const [maxTokens, setMaxTokens] = useState(16384);
   const [systemPrompt, setSystemPrompt] = useState('business_analyst');
   const [customSystemPrompt, setCustomSystemPrompt] = useState('');
+  const [showImageUpload, setShowImageUpload] = useState(false);
 
   const messagesEndRef = useRef(null);
-  const fileInputRef = useRef(null);
 
   // Load available models
   const { models, loading: modelsLoading } = useTextGenerationModels();
@@ -41,6 +43,19 @@ const ChatInterface = ({ onTextGenerated }) => {
     generateStream,
     reset: resetStream,
   } = useStreamingTextGeneration();
+
+  // Image paste hook
+  const { pastedImages, clearPastedImages } = useImagePaste((newImages) => {
+    setFiles(prev => [...prev, ...newImages]);
+    setShowImageUpload(true);
+    
+    // Show notification
+    if (notify) {
+      notify.success(`Đã paste ${newImages.length} ảnh từ clipboard!`, {
+        duration: 3000
+      });
+    }
+  });
 
   // Auto-scroll to bottom
   const scrollToBottom = () => {
@@ -110,8 +125,60 @@ const ChatInterface = ({ onTextGenerated }) => {
     setFiles(selectedFiles);
   };
 
+  // Handler for ImageUploadZone
+  const handleImagesAdd = (newImages) => {
+    const validImages = newImages.slice(0, env.upload.maxFiles);
+    
+    // Validate file sizes
+    const oversizedFiles = validImages.filter(file => file.size > env.upload.maxFileSize);
+    if (oversizedFiles.length > 0) {
+      const maxSizeMB = (env.upload.maxFileSize / 1024 / 1024).toFixed(1);
+      const errorMessage = `Một số ảnh quá lớn (tối đa: ${maxSizeMB}MB): ${oversizedFiles.map(f => f.name).join(', ')}`;
+      
+      if (notify) {
+        notify.error(errorMessage, { duration: 6000 });
+      } else {
+        alert(errorMessage);
+      }
+      
+      // Filter out oversized files
+      const validSizedImages = validImages.filter(file => file.size <= env.upload.maxFileSize);
+      setFiles(prev => [...prev, ...validSizedImages]);
+      
+      if (validSizedImages.length > 0 && notify) {
+        notify.success(`Đã thêm ${validSizedImages.length} ảnh hợp lệ`);
+      }
+    } else {
+      setFiles(prev => [...prev, ...validImages]);
+      
+      if (notify) {
+        notify.success(`Đã thêm ${validImages.length} ảnh!`);
+      }
+    }
+    
+    // Show the upload zone if not already visible
+    if (!showImageUpload) {
+      setShowImageUpload(true);
+    }
+  };
+
   const handleRemoveFile = (index) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
+    
+    // Hide upload zone if no files left
+    if (files.length <= 1) {
+      setShowImageUpload(false);
+    }
+  };
+
+  const handleToggleImageUpload = () => {
+    setShowImageUpload(prev => !prev);
+    
+    // Clear files if hiding
+    if (showImageUpload) {
+      setFiles([]);
+      clearPastedImages();
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -170,13 +237,15 @@ const ChatInterface = ({ onTextGenerated }) => {
     // Clear input
     setPrompt('');
     setFiles([]);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    clearPastedImages();
+    setShowImageUpload(false);
   };
 
   const handleClearChat = () => {
     setMessages([]);
+    setFiles([]);
+    clearPastedImages();
+    setShowImageUpload(false);
     reset();
     resetStream();
   };
@@ -184,7 +253,9 @@ const ChatInterface = ({ onTextGenerated }) => {
   const handleCopyMessage = async (content) => {
     try {
       await navigator.clipboard.writeText(content);
-      // You could add a toast notification here if needed
+      if (notify) {
+        notify.success('Đã copy tin nhắn!', { duration: 2000 });
+      }
     } catch (err) {
       console.error('Failed to copy message:', err);
       // Fallback for older browsers
@@ -194,6 +265,10 @@ const ChatInterface = ({ onTextGenerated }) => {
       textArea.select();
       document.execCommand('copy');
       document.body.removeChild(textArea);
+      
+      if (notify) {
+        notify.success('Đã copy tin nhắn!', { duration: 2000 });
+      }
     }
   };
 
@@ -396,68 +471,82 @@ const ChatInterface = ({ onTextGenerated }) => {
 
         {/* Input Form */}
         <form onSubmit={handleSubmit} className={styles.inputForm}>
-        {/* File Upload */}
-        {files.length > 0 && (
-          <div className={styles.filePreview}>
-            {files.map((file, index) => (
-              <div key={index} className={styles.fileItem}>
-                <span>{file.name}</span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveFile(index)}
-                  className={styles.removeFile}
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
+          {/* Image Upload Zone */}
+          {showImageUpload && (
+            <ImageUploadZone
+              files={files}
+              onFilesAdd={handleImagesAdd}
+              onFileRemove={handleRemoveFile}
+              maxFiles={env.upload.maxFiles}
+              maxFileSize={env.upload.maxFileSize}
+              disabled={!env.features.fileUpload}
+            />
+          )}
 
-        <div className={styles.inputContainer}>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept={env.upload.supportedTypes}
-            onChange={handleFileChange}
-            style={{ display: 'none' }}
-            disabled={!env.features.fileUpload}
-          />
+          {/* Legacy File Preview (keep for backwards compatibility) */}
+          {!showImageUpload && files.length > 0 && (
+            <div className={styles.filePreview}>
+              {files.map((file, index) => (
+                <div key={index} className={styles.fileItem}>
+                  <span>{file.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFile(index)}
+                    className={styles.removeFile}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className={styles.fileButton}
-            disabled={!env.features.fileUpload || currentLoading}
-          >
-            Tập tin
-          </button>
+          <div className={styles.inputContainer}>
+            {/* Image Upload Toggle Button */}
+            <button
+              type="button"
+              onClick={handleToggleImageUpload}
+              className={`${styles.fileButton} ${showImageUpload ? styles.active : ''}`}
+              disabled={!env.features.fileUpload || currentLoading}
+              title={showImageUpload ? "Ẩn khu vực upload ảnh" : "Hiện khu vực upload ảnh"}
+            >
+              {showImageUpload ? '🖼️' : '📷'}
+            </button>
 
-          <AutoResizeTextarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Gõ tin nhắn của bạn tại đây... (Shift+Enter để xuống dòng)"
-            className={styles.messageInput}
-            disabled={currentLoading}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSubmit(e);
+            <AutoResizeTextarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder={showImageUpload ? 
+                "Mô tả những gì bạn muốn phân tích về các ảnh... (Shift+Enter để xuống dòng)" :
+                "Gõ tin nhắn của bạn tại đây... (Shift+Enter để xuống dòng)"
               }
-            }}
-            minRows={1}
-            maxRows={6}
-          />
+              className={styles.messageInput}
+              disabled={currentLoading}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }
+              }}
+              minRows={1}
+              maxRows={6}
+            />
 
-          <button
-            type="submit"
-            disabled={currentLoading || !prompt.trim()}
-            className={styles.sendButton}
-          >
-            {currentLoading ? '⏳' : 'Gửi'}
-          </button>
-        </div>
+            <button
+              type="submit"
+              disabled={currentLoading || !prompt.trim()}
+              className={styles.sendButton}
+            >
+              {currentLoading ? '⏳' : 'Gửi'}
+            </button>
+          </div>
+
+          {/* Image Upload Hint */}
+          {showImageUpload && (
+            <div className={styles.imageUploadHint}>
+              💡 Bạn có thể <strong>paste ảnh</strong> từ clipboard bằng <kbd>Ctrl+V</kbd> hoặc <strong>kéo thả</strong> ảnh vào khu vực bên trên
+            </div>
+          )}
 
           {currentError && (
             <div className={styles.error}>
