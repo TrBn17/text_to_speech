@@ -85,9 +85,8 @@ class NotebookLMAutomation:
                 except Exception:
                     pass  # Page activation failed, continue anyway
 
-            # Try download
-            method = "interactive" if elapsed_time < 600 else "more"
-            return self.try_download_method(page, method)
+            # Try download using more menu only
+            return self.try_download_method(page, "more")
 
         except Exception as e:
             print(f"❌ Reload error: {e}")
@@ -267,40 +266,67 @@ class NotebookLMAutomation:
             print("🎵 Generating Audio Overview...")
             print("🔍 Looking for Audio Overview button...")
 
-            # Look for Audio Overview button (English and Vietnamese)
-            audio_overview_selectors = [
-                'text="Audio Overview"',
-                'text="Tổng quan âm thanh"',
-                'text="Bản tổng quan âm thanh"',
-                'button:has-text("Audio Overview")',
-                'button:has-text("Tổng quan âm thanh")',
-                'button:has-text("tổng quan")',
-                'span:has-text("Audio Overview")',
-                'span:has-text("Tổng quan")'
-            ]
-
+            # Look for Audio Overview button using best practices
             audio_overview_btn = None
-            for selector in audio_overview_selectors:
-                try:
-                    print(f"   Trying selector: {selector}")
-                    btn = page.locator(selector)
-                    if btn.count() > 0:
-                        # For span selector, get the parent button
-                        if selector.startswith('span.'):
-                            audio_overview_btn = btn.locator('xpath=ancestor::button').first
-                        else:
-                            audio_overview_btn = btn.first
-                        print(f"✅ Found Audio Overview button with: {selector}")
-                        break
-                except Exception as e:
-                    print(f"   ❌ Failed with {selector}: {e}")
 
-            if audio_overview_btn and audio_overview_btn.count() > 0:
-                audio_overview_btn.wait_for(timeout=10000)
+            # Method 1: get_by_role for buttons
+            try:
+                audio_overview_btn = page.get_by_role("button", name="Audio Overview")
+                expect(audio_overview_btn).to_be_visible(timeout=5000)
+                print("✅ Found Audio Overview with get_by_role")
+            except Exception:
+                try:
+                    audio_overview_btn = page.get_by_role("button", name="Tổng quan âm thanh")
+                    expect(audio_overview_btn).to_be_visible(timeout=3000)
+                    print("✅ Found Audio Overview with get_by_role (Vietnamese)")
+                except Exception as e:
+                    print(f"   get_by_role failed: {e}")
+                    audio_overview_btn = None
+
+            # Method 2: get_by_text
+            if not audio_overview_btn:
+                try:
+                    audio_overview_btn = page.get_by_text("Audio Overview", exact=False)
+                    expect(audio_overview_btn).to_be_visible(timeout=3000)
+                    print("✅ Found Audio Overview with get_by_text")
+                except Exception:
+                    try:
+                        audio_overview_btn = page.get_by_text("Tổng quan âm thanh", exact=False)
+                        expect(audio_overview_btn).to_be_visible(timeout=3000)
+                        print("✅ Found Audio Overview with get_by_text (Vietnamese)")
+                    except Exception as e:
+                        print(f"   get_by_text failed: {e}")
+                        audio_overview_btn = None
+
+            # Method 3: Fallback with locators
+            if not audio_overview_btn:
+                selectors = [
+                    'button:has-text("Audio Overview")',
+                    'button:has-text("Tổng quan âm thanh")',
+                    'button:has-text("tổng quan")'
+                ]
+                for selector in selectors:
+                    try:
+                        audio_overview_btn = page.locator(selector).first
+                        expect(audio_overview_btn).to_be_visible(timeout=2000)
+                        print(f"✅ Found Audio Overview with: {selector}")
+                        break
+                    except Exception:
+                        continue
+                else:
+                    audio_overview_btn = None
+
+            if not audio_overview_btn:
+                print("❌ Audio Overview button not found")
+                return False
+
+            # Click Audio Overview button
+            try:
+                expect(audio_overview_btn).to_be_enabled(timeout=5000)
                 audio_overview_btn.click()
                 print("✅ Audio Overview clicked successfully")
-            else:
-                print("❌ Audio Overview button not found")
+            except Exception as e:
+                print(f"❌ Failed to click Audio Overview: {e}")
                 return False
 
             # Wait for UI to respond
@@ -309,18 +335,22 @@ class NotebookLMAutomation:
 
             self.debug_page_state(page, "after_audio_overview_click")
 
-            # Check for daily limits (English and Vietnamese)
-            daily_limit_selectors = [
-                "text=You have reached your daily Audio Overview limits",
-                "text=Bạn đã đạt giới hạn",
-                "text=đã đạt giới hạn",
-                "text=giới hạn hàng ngày"
+            # Check for daily limits using best practices
+            limit_messages = [
+                "You have reached your daily Audio Overview limits",
+                "Bạn đã đạt giới hạn",
+                "đã đạt giới hạn",
+                "giới hạn hàng ngày"
             ]
 
-            for selector in daily_limit_selectors:
-                if page.locator(selector).count() > 0:
+            for message in limit_messages:
+                try:
+                    limit_text = page.get_by_text(message, exact=False)
+                    expect(limit_text).to_be_visible(timeout=1000)
                     print("❌ Daily limits reached!")
                     return False
+                except Exception:
+                    continue
 
             print("✅ Audio generation initiated")
             return True
@@ -339,24 +369,25 @@ class NotebookLMAutomation:
         last_download = 0
 
         while elapsed_time < max_wait_time:
-            # Auto-reload every 30 seconds ONLY after 3 minutes (180 seconds)
-            if elapsed_time >= 180 and elapsed_time - last_reload >= 30:
+            # Auto-reload every 60 seconds ONLY after 5 minutes (300 seconds)
+            if elapsed_time >= 300 and elapsed_time - last_reload >= 60:
                 if self.perform_reload_and_try_download(page, elapsed_time):
                     return True
                 last_reload = elapsed_time
 
-            # Check if generating (English and Vietnamese)
-            generating_selectors = [
-                ":has-text('Generating')",
-                ":has-text('Đang tạo')",
-                ":has-text('Đang xử lý')",
-                ":has-text('Processing')"
+            # Check if generating using better approach
+            is_generating = False
+            generating_messages = [
+                "Generating",
+                "Đang tạo",
+                "Đang xử lý",
+                "Processing"
             ]
 
-            is_generating = False
-            for sel in generating_selectors:
+            for message in generating_messages:
                 try:
-                    page.locator(sel).wait_for(state="visible", timeout=100)
+                    generating_text = page.get_by_text(message, exact=False)
+                    expect(generating_text).to_be_visible(timeout=100)
                     is_generating = True
                     break
                 except Exception:
@@ -365,32 +396,50 @@ class NotebookLMAutomation:
             if is_generating:
                 print(f"   🔄 Still generating... ({elapsed_time//60}:{elapsed_time%60:02d})")
             else:
-                # Check if audio ready (English and Vietnamese)
-                audio_selectors = [
-                    "button:has-text('Interactive')",
-                    "button:has-text('Tương tác')",
-                    "div:has-text('Digital Fossil')",
-                    "div:has-text('Deep Dive')",
-                    "div:has-text('Hoá thạch số')",
-                    "div:has-text('Đào sâu')",
-                    "div:has-text('phút')",
-                    "div:has-text('minute')"
-                ]
+                # Check if audio ready using better approach
                 audio_found = False
-                for sel in audio_selectors:
+
+                # Check for duration indicators
+                duration_indicators = ["phút", "minute", "min"]
+                for indicator in duration_indicators:
                     try:
-                        page.locator(sel).wait_for(state="visible", timeout=100)
+                        duration_text = page.get_by_text(indicator, exact=False)
+                        expect(duration_text).to_be_visible(timeout=100)
                         audio_found = True
                         break
                     except Exception:
                         continue
 
-                # Try download after 3 minutes (180 seconds) and every 15 seconds after that
-                if audio_found and elapsed_time >= 180 and elapsed_time - last_download >= 15:
-                    method = "interactive" if elapsed_time < 600 else "more"  # 10 min cutoff
-                    if self.try_download_method(page, method):
+                # Check for More button as audio ready indicator
+                if not audio_found:
+                    try:
+                        more_btn = page.get_by_text("More", exact=False)
+                        expect(more_btn).to_be_visible(timeout=100)
+                        audio_found = True
+                    except Exception:
+                        try:
+                            more_btn = page.get_by_text("Thêm", exact=False)
+                            expect(more_btn).to_be_visible(timeout=100)
+                            audio_found = True
+                        except Exception:
+                            pass
+
+                # Check for artifact elements
+                if not audio_found:
+                    try:
+                        artifact = page.locator("artifact-library-item").first
+                        expect(artifact).to_be_visible(timeout=100)
+                        audio_found = True
+                    except Exception:
+                        pass
+
+                # Try download when audio ready and after minimum wait time
+                if audio_found and elapsed_time >= 120:  # Wait at least 2 minutes
+                    if self.try_download_method(page, "more"):
                         return True
-                    last_download = elapsed_time
+                    # If download failed, wait longer before next attempt
+                    page.wait_for_timeout(30000)  # Wait 30 more seconds
+                    elapsed_time += 30
 
             page.wait_for_timeout(30000)  # 30 sec intervals
             elapsed_time += 30
@@ -398,13 +447,12 @@ class NotebookLMAutomation:
         print(f"❌ Timeout after {max_wait_minutes} minutes")
         return False
 
-    def find_element(self, page, selectors: list, description: str):
-        """Generic element finder with multiple selectors."""
+    def find_element_with_expect(self, page, selectors: list, description: str):
+        """Find element using Playwright best practices with expect()."""
         for selector in selectors:
             try:
                 candidate = page.locator(selector).first
-                # Wait for element to be visible (includes attached check)
-                candidate.wait_for(state="visible", timeout=10000)
+                expect(candidate).to_be_visible(timeout=5000)
                 return candidate
             except Exception as e:
                 print(f"   Failed selector {selector}: {e}")
@@ -413,130 +461,92 @@ class NotebookLMAutomation:
         return None
 
     def try_download_method(self, page, method: str) -> bool:
-        """Try different download methods - Interactive or More menu."""
+        """Try More menu download method."""
         page.wait_for_timeout(3000)
 
-        if method == "interactive":
-            print("👋 Trying Interactive mode...")
-            # Find Interactive button using more robust locators
-            interactive_selectors = [
-                'button:has-text("Interactive")',
-                'button:has-text("Tương tác")',
-                'button[aria-label*="Interactive"]',
-                'button[aria-label*="Tương tác"]',
-                'button:has(mat-icon:text("waving_hand"))'
-            ]
-            btn = self.find_element(page, interactive_selectors, "Interactive button")
-            if not btn:
-                return False
+        print("📋 Trying More menu...")
 
-            # Click Interactive button with error handling
-            try:
-                btn.scroll_into_view_if_needed()
-                btn.click(timeout=10000)
-                print("✅ Interactive button clicked")
-            except Exception as e:
-                print(f"❌ Failed to click Interactive button: {e}")
-                # Try force click as fallback
-                try:
-                    btn.click(force=True)
-                    print("✅ Interactive button force clicked")
-                except Exception as e2:
-                    print(f"❌ Force click also failed: {e2}")
-                    return False
-
-            page.wait_for_timeout(3000)
-
-            # Find download button with better error handling
-            download_selectors = [
-                'a:has-text("Download")',
-                'a:has-text("Tải xuống")',
-                'a[aria-label*="Download"]',
-                'a[aria-label*="Tải xuống"]',
-                'a[href*="googleusercontent.com"][download]',
-                'button:has(mat-icon:text("download"))',
-                'button:has-text("Download")',
-                'button:has-text("Tải xuống")'
-            ]
-            dl_btn = self.find_element(page, download_selectors, "Download button")
-            if not dl_btn:
-                return False
-
-        else:  # More menu method
-            print("📋 Trying More menu...")
-            # Find artifact with better waiting
-            try:
-                artifact = page.locator('section, div').filter(
-                    has_text=re.compile(r"(Deep Dive|Digital Fossil|hosts|Overview)", re.IGNORECASE)
-                ).first
-                artifact.wait_for(state="visible", timeout=10000)
-            except Exception as e:
-                print(f"❌ Failed to find artifact: {e}")
-                return False
-
-            # Find More button using existing helper
-            more_selectors = [
-                'button:has-text("More")',
-                'button:has-text("Thêm")',
-                'button[aria-label*="More"]',
-                'button[aria-label*="Thêm"]',
-                'button:has(mat-icon:text("more_vert"))'
-            ]
-
-            # Use find_element but with artifact scope
-            more_btn = None
-            for selector in more_selectors:
-                try:
-                    candidate = artifact.locator(selector).first
-                    candidate.wait_for(state="visible", timeout=5000)
-                    more_btn = candidate
-                    break
-                except Exception as e:
-                    print(f"   Failed More selector {selector}: {e}")
-                    continue
-
-            if not more_btn:
-                print("❌ Could not find More button")
-                return False
-
-            # Click More button with error handling
-            try:
-                more_btn.click(timeout=10000)
-                print("✅ More button clicked")
-            except Exception as e:
-                print(f"❌ Failed to click More button: {e}")
-                try:
-                    more_btn.click(force=True)
-                    print("✅ More button force clicked")
-                except Exception as e2:
-                    print(f"❌ Force click More button failed: {e2}")
-                    return False
-
-            page.wait_for_timeout(3000)
-
-            # Find download menu item with better waiting
-            menu_selectors = [
-                'button[role="menuitem"]:has-text("Download")',
-                'button[role="menuitem"]:has-text("Tải xuống")',
-                '[role="menuitem"]:has-text("Download")',
-                '[role="menuitem"]:has-text("Tải xuống")',
-                'text="Download"',
-                'text="Tải xuống"'
-            ]
-            dl_btn = self.find_element(page, menu_selectors, "Download menu item")
-            if not dl_btn:
-                return False
-
-        # Execute download with better error handling
+        # Use the working XPath that was found
         try:
-            with page.expect_download(timeout=20000) as dl_info:
+            more_btn = page.locator("//artifact-library-item//button[contains(@aria-label, 'More')]")
+            expect(more_btn).to_be_visible(timeout=10000)
+            print("✅ Found More button")
+        except Exception as e:
+            print(f"❌ Could not find More button: {e}")
+            return False
+
+        # Wait for More button to be enabled (audio generation complete)
+        print("   Waiting for More button to be enabled...")
+        try:
+            expect(more_btn).to_be_enabled(timeout=30000)  # Wait up to 30 seconds
+            more_btn.click()
+            print("✅ More button clicked")
+        except Exception as e:
+            print(f"❌ More button not enabled within timeout: {e}")
+            return False
+
+        page.wait_for_timeout(3000)
+
+        # Find download menu item using best practices
+        print("   Looking for Download menu item...")
+        dl_btn = None
+
+        # Method 1: get_by_role for menu items
+        try:
+            dl_btn = page.get_by_role("menuitem", name="Download")
+            expect(dl_btn).to_be_visible(timeout=5000)
+            print("✅ Found Download with get_by_role")
+        except Exception:
+            try:
+                dl_btn = page.get_by_role("menuitem", name="Tải xuống")
+                expect(dl_btn).to_be_visible(timeout=3000)
+                print("✅ Found Download with get_by_role (Vietnamese)")
+            except Exception as e:
+                print(f"   get_by_role for menuitem failed: {e}")
+                dl_btn = None
+
+        # Method 2: get_by_text for download text
+        if not dl_btn:
+            try:
+                dl_btn = page.get_by_text("Download", exact=False)
+                expect(dl_btn).to_be_visible(timeout=3000)
+                print("✅ Found Download with get_by_text")
+            except Exception:
                 try:
-                    dl_btn.click(timeout=10000)
-                    print("✅ Download button clicked")
+                    dl_btn = page.get_by_text("Tải xuống", exact=False)
+                    expect(dl_btn).to_be_visible(timeout=3000)
+                    print("✅ Found Download with get_by_text (Vietnamese)")
                 except Exception as e:
-                    print(f"❌ Normal click failed: {e}, trying force click")
-                    dl_btn.click(force=True)
-                    print("✅ Download button force clicked")
+                    print(f"   get_by_text failed: {e}")
+                    dl_btn = None
+
+        # Method 3: Fallback with locators
+        if not dl_btn:
+            selectors = [
+                '[role="menuitem"]:has-text("Download")',
+                '[role="menuitem"]:has-text("Tải xuống")'
+            ]
+            for selector in selectors:
+                try:
+                    dl_btn = page.locator(selector).first
+                    expect(dl_btn).to_be_visible(timeout=2000)
+                    print(f"✅ Found Download with: {selector}")
+                    break
+                except Exception:
+                    continue
+            else:
+                dl_btn = None
+
+        if not dl_btn:
+            print("❌ Could not find Download menu item")
+            return False
+
+        # Execute download using best practices
+        try:
+            expect(dl_btn).to_be_enabled(timeout=5000)
+            with page.expect_download(timeout=20000) as dl_info:
+                dl_btn.click()
+                print("✅ Download button clicked")
 
             print(f"✅ Download started: {dl_info.value.suggested_filename}")
             return True
@@ -548,11 +558,8 @@ class NotebookLMAutomation:
         """Simplified download with dual strategy."""
         page.wait_for_timeout(5000)
 
-        # Try Interactive first, then More menu
-        for method in ["interactive", "more"]:
-            if self.try_download_method(page, method):
-                return True
-        return False
+        # Only try More menu method
+        return self.try_download_method(page, "more")
 
     def check_playwright_installation(self) -> bool:
         """Check if Playwright is properly installed by launching a temp browser."""

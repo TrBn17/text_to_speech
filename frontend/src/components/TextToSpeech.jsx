@@ -592,7 +592,7 @@ AI sẽ tạo ra cuộc hội thoại tự nhiên giữa hai người dẫn chư
         {/* Error Display */}
         {notebookError && (
           <div className={styles.error}>
-            <strong>Lỗi NotebookLM</strong>
+            <strong>Lỗi xảy ra</strong>
             <div className={styles.errorContent}>
               {notebookError.split('\n').map((line, index) => (
                 <div key={index} className={styles.errorLine}>
