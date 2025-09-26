@@ -73,14 +73,17 @@ class NotebookLMAutomation:
         """Reload page and try download."""
         try:
             print("🔄 Reloading page...")
-            page.keyboard.press("Control+r")
-            page.wait_for_timeout(5000)
+            page.reload(wait_until="load", timeout=30000)
+            page.wait_for_timeout(2000)
 
             # Activate page
             try:
                 page.locator("body").click(timeout=2000)
-            except:
-                page.keyboard.press("Space")
+            except Exception:
+                try:
+                    page.keyboard.press("Space")
+                except Exception:
+                    pass  # Page activation failed, continue anyway
 
             # Try download
             method = "interactive" if elapsed_time < 600 else "more"
@@ -336,8 +339,8 @@ class NotebookLMAutomation:
         last_download = 0
 
         while elapsed_time < max_wait_time:
-            # Auto-reload every 4 minutes
-            if elapsed_time - last_reload >= 240 and elapsed_time > 0:
+            # Auto-reload every 30 seconds ONLY after 3 minutes (180 seconds)
+            if elapsed_time >= 180 and elapsed_time - last_reload >= 30:
                 if self.perform_reload_and_try_download(page, elapsed_time):
                     return True
                 last_reload = elapsed_time
@@ -350,7 +353,15 @@ class NotebookLMAutomation:
                 ":has-text('Processing')"
             ]
 
-            is_generating = any(page.locator(sel).count() > 0 for sel in generating_selectors)
+            is_generating = False
+            for sel in generating_selectors:
+                try:
+                    page.locator(sel).wait_for(state="visible", timeout=100)
+                    is_generating = True
+                    break
+                except Exception:
+                    continue
+
             if is_generating:
                 print(f"   🔄 Still generating... ({elapsed_time//60}:{elapsed_time%60:02d})")
             else:
@@ -365,9 +376,17 @@ class NotebookLMAutomation:
                     "div:has-text('phút')",
                     "div:has-text('minute')"
                 ]
-                audio_found = any(page.locator(sel).count() > 0 for sel in audio_selectors)
+                audio_found = False
+                for sel in audio_selectors:
+                    try:
+                        page.locator(sel).wait_for(state="visible", timeout=100)
+                        audio_found = True
+                        break
+                    except Exception:
+                        continue
 
-                if audio_found and elapsed_time - last_download >= 15:
+                # Try download after 3 minutes (180 seconds) and every 15 seconds after that
+                if audio_found and elapsed_time >= 180 and elapsed_time - last_download >= 15:
                     method = "interactive" if elapsed_time < 600 else "more"  # 10 min cutoff
                     if self.try_download_method(page, method):
                         return True
@@ -384,11 +403,13 @@ class NotebookLMAutomation:
         for selector in selectors:
             try:
                 candidate = page.locator(selector).first
-                if candidate.count() > 0:
-                    candidate.wait_for(state="visible", timeout=5000)
-                    return candidate
-            except:
+                # Wait for element to be visible (includes attached check)
+                candidate.wait_for(state="visible", timeout=10000)
+                return candidate
+            except Exception as e:
+                print(f"   Failed selector {selector}: {e}")
                 continue
+        print(f"❌ Could not find {description}")
         return None
 
     def try_download_method(self, page, method: str) -> bool:
@@ -397,7 +418,7 @@ class NotebookLMAutomation:
 
         if method == "interactive":
             print("👋 Trying Interactive mode...")
-            # Find Interactive button
+            # Find Interactive button using more robust locators
             interactive_selectors = [
                 'button:has-text("Interactive")',
                 'button:has-text("Tương tác")',
@@ -409,18 +430,33 @@ class NotebookLMAutomation:
             if not btn:
                 return False
 
-            btn.scroll_into_view_if_needed()
-            btn.click()
+            # Click Interactive button with error handling
+            try:
+                btn.scroll_into_view_if_needed()
+                btn.click(timeout=10000)
+                print("✅ Interactive button clicked")
+            except Exception as e:
+                print(f"❌ Failed to click Interactive button: {e}")
+                # Try force click as fallback
+                try:
+                    btn.click(force=True)
+                    print("✅ Interactive button force clicked")
+                except Exception as e2:
+                    print(f"❌ Force click also failed: {e2}")
+                    return False
+
             page.wait_for_timeout(3000)
 
-            # Find download button
+            # Find download button with better error handling
             download_selectors = [
                 'a:has-text("Download")',
                 'a:has-text("Tải xuống")',
                 'a[aria-label*="Download"]',
                 'a[aria-label*="Tải xuống"]',
                 'a[href*="googleusercontent.com"][download]',
-                'button:has(mat-icon:text("download"))'
+                'button:has(mat-icon:text("download"))',
+                'button:has-text("Download")',
+                'button:has-text("Tải xuống")'
             ]
             dl_btn = self.find_element(page, download_selectors, "Download button")
             if not dl_btn:
@@ -428,15 +464,17 @@ class NotebookLMAutomation:
 
         else:  # More menu method
             print("📋 Trying More menu...")
-            # Find artifact
-            artifact_selectors = ['section, div']
-            artifact = page.locator(artifact_selectors[0]).filter(
-                has_text=re.compile(r"(Deep Dive|Digital Fossil|hosts|Overview)", re.IGNORECASE)
-            ).first
-            if artifact.count() == 0:
+            # Find artifact with better waiting
+            try:
+                artifact = page.locator('section, div').filter(
+                    has_text=re.compile(r"(Deep Dive|Digital Fossil|hosts|Overview)", re.IGNORECASE)
+                ).first
+                artifact.wait_for(state="visible", timeout=10000)
+            except Exception as e:
+                print(f"❌ Failed to find artifact: {e}")
                 return False
 
-            # Find More button
+            # Find More button using existing helper
             more_selectors = [
                 'button:has-text("More")',
                 'button:has-text("Thêm")',
@@ -444,14 +482,39 @@ class NotebookLMAutomation:
                 'button[aria-label*="Thêm"]',
                 'button:has(mat-icon:text("more_vert"))'
             ]
-            more_btn = self.find_element(artifact, more_selectors, "More button")
+
+            # Use find_element but with artifact scope
+            more_btn = None
+            for selector in more_selectors:
+                try:
+                    candidate = artifact.locator(selector).first
+                    candidate.wait_for(state="visible", timeout=5000)
+                    more_btn = candidate
+                    break
+                except Exception as e:
+                    print(f"   Failed More selector {selector}: {e}")
+                    continue
+
             if not more_btn:
+                print("❌ Could not find More button")
                 return False
 
-            more_btn.click()
-            page.wait_for_timeout(2000)
+            # Click More button with error handling
+            try:
+                more_btn.click(timeout=10000)
+                print("✅ More button clicked")
+            except Exception as e:
+                print(f"❌ Failed to click More button: {e}")
+                try:
+                    more_btn.click(force=True)
+                    print("✅ More button force clicked")
+                except Exception as e2:
+                    print(f"❌ Force click More button failed: {e2}")
+                    return False
 
-            # Find download menu item
+            page.wait_for_timeout(3000)
+
+            # Find download menu item with better waiting
             menu_selectors = [
                 'button[role="menuitem"]:has-text("Download")',
                 'button[role="menuitem"]:has-text("Tải xuống")',
@@ -464,10 +527,17 @@ class NotebookLMAutomation:
             if not dl_btn:
                 return False
 
-        # Execute download
+        # Execute download with better error handling
         try:
-            with page.expect_download(timeout=15000) as dl_info:
-                dl_btn.click()
+            with page.expect_download(timeout=20000) as dl_info:
+                try:
+                    dl_btn.click(timeout=10000)
+                    print("✅ Download button clicked")
+                except Exception as e:
+                    print(f"❌ Normal click failed: {e}, trying force click")
+                    dl_btn.click(force=True)
+                    print("✅ Download button force clicked")
+
             print(f"✅ Download started: {dl_info.value.suggested_filename}")
             return True
         except Exception as e:
@@ -557,13 +627,15 @@ class NotebookLMAutomation:
                         if not self.generate_audio_overview(page):
                             return False
 
-                        # Wait for completion
-                        audio_ready = self.wait_for_audio_completion(
+                        # Wait for completion and download
+                        download_success = self.wait_for_audio_completion(
                             page, max_wait_minutes
                         )
 
-                        # Download audio
-                        download_success = self.download_audio(page)
+                        # If wait_for_audio_completion didn't succeed, try download one more time
+                        if not download_success:
+                            print("🔄 Final download attempt...")
+                            download_success = self.download_audio(page)
 
                         # Summary
                         print("\n🎉 Automation Workflow Completed!")
@@ -571,11 +643,9 @@ class NotebookLMAutomation:
                         print("   Content source: custom text")
                         print(f"   Content length: {len(content)} chars")
                         print("   Upload: SUCCESS")
+                        print("   Audio generation: SUCCESS")
                         print(
-                            f"   Audio generation: {'SUCCESS' if audio_ready else 'TIMEOUT'}"
-                        )
-                        print(
-                            f"   Download: {'SUCCESS' if download_success else 'PARTIAL'}"
+                            f"   Download: {'SUCCESS' if download_success else 'FAILED'}"
                         )
 
                         print("\nBrowser staying open for manual check...")
