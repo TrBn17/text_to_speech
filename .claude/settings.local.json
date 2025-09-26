@@ -27,7 +27,9 @@
       "Bash(npm install:*)",
       "WebFetch(domain:reactbits.dev)",
       "WebFetch(domain:playwright.dev)",
-      "WebFetch(domain:notebooklm.google.com)"
+      "WebFetch(domain:notebooklm.google.com)",
+      "Bash(del \"C:\\Users\\Hi\\text_to_speech\\temp_function.js\")",
+      "Bash(tasklist:*)"
     ],
     "deny": [],
     "ask": []

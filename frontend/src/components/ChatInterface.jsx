@@ -7,6 +7,7 @@ import Sidebar from './common/Sidebar';
 import { SettingsSection } from './common/SettingsSection';
 import { Select, Input, Textarea, Slider, CheckboxLabel } from './common/FormControls';
 import AutoResizeTextarea from './common/AutoResizeTextarea';
+import TypingAnimation from './common/TypingAnimation';
 import styles from '../styles/ChatInterface.module.css';
 
 const ChatInterface = ({ onTextGenerated }) => {
@@ -309,17 +310,18 @@ const ChatInterface = ({ onTextGenerated }) => {
 
       {/* Right Chat Area */}
       <div className={styles.chatArea}>
-        <div className={styles.chatHeader}>
-          <h1 className={styles.chatTitle}>Tôi có thể giúp gì cho bạn?</h1>
-        </div>
-
         {/* Chat Messages */}
         <div className={styles.messagesContainer}>
+        {messages.length === 0 && (
+          <div className={styles.welcomeMessage}>
+            <TypingAnimation />
+          </div>
+        )}
         {messages.map((message) => (
           <div key={message.id} className={`${styles.message} ${styles[message.type]}`}>
             <div className={styles.messageHeader}>
               <span className={styles.messageRole}>
-                {message.type === 'user' ? 'Bạn' : message.type === 'assistant' ? 'AI' : 'Lỗi'}
+                {message.type === 'user' ? 'User' : message.type === 'assistant' ? 'AI' : 'Lỗi'}
               </span>
               <span className={styles.messageTime}>
                 {message.timestamp.toLocaleTimeString()}

@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .api import config_router, generate_router, tts_router
+from .api import config_router, generate_router, tts_router, audio_router
 from .api.models import router as models_router
-from .api.notebooklm import router as notebooklm_router
+from .api.audio_generation import router as audio_generation_router
+from .api.foxai import router as foxai_router
 from dotenv import load_dotenv
 import os
 
@@ -29,7 +30,9 @@ app.include_router(config_router, prefix="/api")
 app.include_router(generate_router, prefix="/api")
 app.include_router(tts_router, prefix="/api")
 app.include_router(models_router, prefix="/api")
-app.include_router(notebooklm_router, prefix="/api")
+app.include_router(audio_generation_router, prefix="/api")
+app.include_router(foxai_router, prefix="/api")
+app.include_router(audio_router, prefix="/api")
 
 @app.get("/")
 async def root():
@@ -41,7 +44,9 @@ async def root():
             "/api/generate",
             "/api/tts",
             "/api/models",
-            "/api/notebooklm"
+            "/api/audio-generation",
+            "/api/foxai",
+            "/api/audio"
         ],
         "docs": "/docs",
         "health": "/health"

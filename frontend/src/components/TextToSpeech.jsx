@@ -6,6 +6,8 @@ import env from '../config/environment';
 import Sidebar from './common/Sidebar';
 import { SettingsSection } from './common/SettingsSection';
 import { Select, Textarea, Slider } from './common/FormControls';
+import ProgressBar from './common/ProgressBar';
+import NotificationManager, { useNotifications } from './common/NotificationManager';
 import styles from '../styles/TextToSpeech.module.css';
 
 const TextToSpeech = ({ generatedText }) => {
@@ -15,12 +17,19 @@ const TextToSpeech = ({ generatedText }) => {
   const [provider, setProvider] = useState(env.defaults.tts.provider);
   const [showAdvanced, setShowAdvanced] = useState(false);
   
-  // NotebookLM states
+  // Advanced Audio Generation states
   const [activeTab, setActiveTab] = useState('tts');
   const [isGeneratingNotebook, setIsGeneratingNotebook] = useState(false);
   const [notebookResult, setNotebookResult] = useState(null);
   const [notebookError, setNotebookError] = useState(null);
-  const [customText, setCustomText] = useState(''); // Custom text for NotebookLM
+  const [customText, setCustomText] = useState(''); // Custom text for audio generation
+  const [progress, setProgress] = useState(0);
+  const [progressStatus, setProgressStatus] = useState('idle');
+  const [currentStep, setCurrentStep] = useState('');
+  const [estimatedTime, setEstimatedTime] = useState('');
+
+  // Notifications
+  const { notifications, removeNotification, notify } = useNotifications();
 
   // Advanced options
   const [model, setModel] = useState('');
@@ -126,31 +135,98 @@ const TextToSpeech = ({ generatedText }) => {
     setText('');
   };
 
-  // NotebookLM functions
-  const handleGenerateNotebookAudio = async () => {
+  // Advanced Audio Generation functions with progress tracking
+  const handleGenerateAdvancedAudio = async () => {
     if (!customText.trim()) {
-      setNotebookError('Vui lòng nhập một số văn bản để chuyển đổi thành âm thanh');
+      notify.error('Vui lòng nhập một số văn bản để chuyển đổi thành âm thanh');
       return;
     }
 
+    // Reset states
     setIsGeneratingNotebook(true);
     setNotebookError(null);
     setNotebookResult(null);
+    setProgress(0);
+    setProgressStatus('preparing');
+    setCurrentStep('Preparing content for processing...');
+    setEstimatedTime('5-15 mins');
+
+    // Show initial notification
+    const processingNotificationId = notify.processing('Starting audio generation...', {
+      title: 'Audio Generation',
+      persistent: true
+    });
+
+    let progressInterval;
 
     try {
-      console.log('🚀 Starting NotebookLM audio generation...');
+      console.log('🚀 Starting advanced audio generation...');
       console.log('📝 Using custom text (length:', customText.trim().length, 'chars)');
-      
-      const response = await apiService.generateNotebookLMAudio({
+
+      // Simulate progress updates (since we can't get real progress from backend)
+      const progressUpdates = [
+        { progress: 10, status: 'uploading', step: 'Uploading content to server...', time: '4-12 mins' },
+        { progress: 25, status: 'processing', step: 'Processing text content...', time: '3-10 mins' },
+        { progress: 40, status: 'generating', step: 'Generating conversation audio...', time: '2-8 mins' },
+        { progress: 70, status: 'generating', step: 'Finalizing audio generation...', time: '1-3 mins' },
+        { progress: 85, status: 'downloading', step: 'Preparing download...', time: '30 secs' }
+      ];
+
+      // Simulate progress (in real app, this would come from backend)
+      let currentProgressIndex = 0;
+      const progressInterval = setInterval(() => {
+        if (currentProgressIndex < progressUpdates.length) {
+          const update = progressUpdates[currentProgressIndex];
+          setProgress(update.progress);
+          setProgressStatus(update.status);
+          setCurrentStep(update.step);
+          setEstimatedTime(update.time);
+          currentProgressIndex++;
+        }
+      }, 2000); // Update every 2 seconds
+
+      const response = await apiService.generateAdvancedAudio({
         custom_text: customText.trim()
       });
-      
-      console.log('✅ NotebookLM generation completed:', response);
+
+      if (progressInterval) clearInterval(progressInterval);
+
+      console.log('✅ Advanced audio generation completed:', response);
+
+      // Final progress
+      setProgress(100);
+      setProgressStatus('completed');
+      setCurrentStep('Audio generation completed successfully!');
+      setEstimatedTime('');
+
       setNotebookResult(response);
-      
+
+      // Remove processing notification and show success
+      removeNotification(processingNotificationId);
+      notify.success('Audio generation completed successfully!', {
+        title: 'Success',
+        duration: 5000
+      });
+
     } catch (err) {
-      console.error('❌ NotebookLM generation failed:', err);
+      if (progressInterval) clearInterval(progressInterval);
+      console.error('❌ Advanced audio generation failed:', err);
+
+      // Update progress to error state
+      setProgress(0);
+      setProgressStatus('error');
+      setCurrentStep('Generation failed. Please try again.');
+      setEstimatedTime('');
+
       setNotebookError(err.message || 'Không thể tạo âm thanh');
+
+      // Remove processing notification and show error
+      removeNotification(processingNotificationId);
+      notify.error('Audio generation failed. Please try again.', {
+        title: 'Generation Error',
+        duration: 8000
+      });
+
     } finally {
       setIsGeneratingNotebook(false);
     }
@@ -182,11 +258,11 @@ const TextToSpeech = ({ generatedText }) => {
               onClick={() => setActiveTab('tts')}
               className={`${styles.tabButton} ${activeTab === 'tts' ? styles.active : ''}`}
             >
-              Sử dụng API
+              Âm thanh nhanh
             </button>
             <button
-              onClick={() => setActiveTab('notebooklm')}
-              className={`${styles.tabButton} ${activeTab === 'notebooklm' ? styles.active : ''}`}
+              onClick={() => setActiveTab('advanced')}
+              className={`${styles.tabButton} ${activeTab === 'advanced' ? styles.active : ''}`}
             >
               Âm thanh hội thoại
             </button>
@@ -352,8 +428,8 @@ const TextToSpeech = ({ generatedText }) => {
             </>
           )}
 
-          {/* NotebookLM Settings */}
-          {activeTab === 'notebooklm' && (
+          {/* Advanced Audio Settings */}
+          {activeTab === 'advanced' && (
             <SettingsSection title="Cài đặt hội thoại">
               <div className={styles.infoBox} style={{ marginTop: '1rem' }}>
                 <div>
@@ -367,7 +443,7 @@ const TextToSpeech = ({ generatedText }) => {
       {/* Right Content Area */}
       <div className={styles.contentArea}>
         <div className={styles.contentHeader}>
-          <h1 className={styles.contentTitle}>Chuyển văn bản thành hội thoại</h1>
+          <h1 className={styles.contentTitle}>Chuyển văn bản thành giọng nói</h1>
         </div>
 
         <div className={styles.contentBody}>
@@ -504,9 +580,9 @@ const TextToSpeech = ({ generatedText }) => {
             </>
           )}
 
-          {/* NotebookLM Tab Content */}
-          {activeTab === 'notebooklm' && (
-            <form onSubmit={(e) => { e.preventDefault(); handleGenerateNotebookAudio(); }} className={styles.form}>
+          {/* Advanced Audio Tab Content */}
+          {activeTab === 'advanced' && (
+            <form onSubmit={(e) => { e.preventDefault(); handleGenerateAdvancedAudio(); }} className={styles.form}>
               {/* Custom Text Input */}
               <div className={styles.formGroup}>
                 <label htmlFor="customText" className={styles.label}>Văn bản cần chuyển đổi</label>
@@ -548,7 +624,7 @@ AI sẽ tạo ra cuộc hội thoại tự nhiên giữa hai người dẫn chư
                   {isGeneratingNotebook ? (
                     <>
                       <span className={styles.loadingSpinner}></span>
-                      Đang tạo âm thanh... (Có thể mất 5-15 phút)
+                      Đang tạo âm thanh... (Có thể mất từ 5-15 phút)
                     </>
                   ) : (
                     'Tạo âm thanh hội thoại'
@@ -563,12 +639,12 @@ AI sẽ tạo ra cuộc hội thoại tự nhiên giữa hai người dẫn chư
                 </div>
               </div>
               <div className={styles.alternativeBox}>
-                <span>🛠️</span>
+                <span>Thời gian để tạo hội thoại ước tính từ <strong>5-15 phút</strong></span>
                 {/* <div>
                   <strong>Manual Alternative:</strong>:
                   <ol className={styles.manualSteps}>
-                    <li>Visit <a href="https://notebooklm.google.com/" target="_blank" rel="noopener noreferrer">notebooklm.google.com</a></li>
-                    <li>Create a new notebook</li>
+                    <li>Prepare your text content (minimum 50 characters)</li>
+                    <li>Click 'Generate Audio' to create conversation</li>
                     <li>Add your text as "Copied text"</li>
                     <li>Generate an "Audio Overview"</li>
                     <li>Download the generated audio file</li>
@@ -579,14 +655,14 @@ AI sẽ tạo ra cuộc hội thoại tự nhiên giữa hai người dẫn chư
           )}
         </div>
 
-        {/* Loading Progress */}
-        {isGeneratingNotebook && (
-          <div className={styles.loadingCard}>
-            <h3 className={styles.resultTitle}>Đang tạo âm thanh...</h3>
-            <p className={styles.loadingText}>
-              Tự động hóa trình duyệt đang diễn ra... Vui lòng đợi kiên nhẫn.
-            </p>
-          </div>
+        {/* Progress Bar - shown during generation */}
+        {(isGeneratingNotebook || progress > 0) && (
+          <ProgressBar
+            progress={progress}
+            status={progressStatus}
+            currentStep={currentStep}
+            estimatedTime={estimatedTime}
+          />
         )}
 
         {/* Error Display */}
@@ -617,6 +693,12 @@ AI sẽ tạo ra cuộc hội thoại tự nhiên giữa hai người dẫn chư
           </div>
         )}
       </div>
+
+      {/* Notification Manager */}
+      <NotificationManager
+        notifications={notifications}
+        onRemove={removeNotification}
+      />
     </div>
   );
 };

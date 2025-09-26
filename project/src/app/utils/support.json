@@ -1,0 +1,63 @@
+{
+  "name": "Công ty CP Công nghệ FOXAI",
+  "website": "https://fox.ai.vn/",
+  "slogan": "Chuyển đổi số toàn diện cùng FOXAI",
+  "headquarters": {
+    "country": "Việt Nam",
+    "address": "Tầng 29, tòa Đông, Trung tâm Lotte, 54 Liễu Giai, Phường Cống Vị, Quận Ba Đình, Hà Nội"
+  },
+  "other_office": {
+    "country": "Lào",
+    "address": "Tầng 6, Tòa nhà VietinBank, số 286 Đường Lanexang, Hatsadinua, Chanthabounly, Viêng Chăn"
+  },
+  "contact": {
+    "email": "info@fox.ai.vn",
+    "phone": "0246 254 4578"
+  },
+  "vision_mission": "Định hướng xu thế chuyển đổi với AI, đồng hành cùng doanh nghiệp trong chuyển đổi số toàn diện",
+  "core_capabilities": [
+    "Tư vấn & triển khai SAP (Business One, S/4 HANA)",
+    "Microsoft Power Platform",
+    "Data Center",
+    "Outsourcing",
+    "Giải pháp kho thông minh (WMS, Warehouse Execution System, Pick To Light)",
+    "Tài chính – Ngân hàng (LOS, Omnichannel Banking, phân tích dữ liệu)",
+    "Robot công nghiệp",
+    "Tự động hóa quy trình (RPA)",
+    "Sản phẩm phần mềm quản lý (Fox-Procurement, Fox-DMS, Fox-Retail)",
+    "Chatbot & Trợ lý ảo",
+    "Học máy (Machine Learning)",
+    "Xử lý ảnh & OCR (Optical Character Recognition)"
+  ],
+  "target_industries": [
+    "Doanh nghiệp sản xuất",
+    "Ngành tài chính – ngân hàng",
+    "Thương mại bán lẻ",
+    "Logistics / Kho vận",
+    "Doanh nghiệp có nhu cầu ERP / chuyển đổi số"
+  ],
+  "achievements_metrics": {
+    "experts_certified": 350,
+    "successful_projects": 250,
+    "countries_with_offices": 5,
+    "awards": 10
+  },
+  "partners_clients": [
+    "Neo Floor",
+    "Bảo Tín Minh Châu",
+    "APFCO",
+    "Techcom Industry",
+    "Dược Khoa",
+    "Khách hàng trong lĩnh vực sản xuất, tài chính, thương mại và logistics khác"
+  ],
+  "news_focus": [
+    "Cách triển khai LOS hiệu quả",
+    "Xu hướng ngân hàng số 4.0",
+    "Tin tức về ERP, công nghệ AI, chatbot, OCR, chuyển đổi số"
+  ],
+  "copyright":
+    {
+      "holder": "FOXAI",
+      "year": 2025
+    }
+}

@@ -245,11 +245,14 @@
   padding: 1rem 1.5rem;
   border-bottom: 2px solid rgba(26, 26, 26, 0.1);
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  display: flex;
+  justify-content: center;
 }
+
 
 .chatTitle {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: 700;
   text-align: center;
   background: linear-gradient(135deg, #1a1a1a 0%, #404040 50%, #1a1a1a 100%);
@@ -284,6 +287,16 @@
   flex-direction: column;
   gap: 1rem;
   background: rgba(248, 250, 252, 0.8);
+  position: relative;
+}
+
+.welcomeMessage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  text-align: center;
 }
 
 /* Message Styles */

@@ -194,7 +194,7 @@ class ApiService {
     });
 
     const jsonResponse = await response.json();
-    debugLog('✅ TTS JSON response:', jsonResponse);
+    debugLog('TTS JSON response:', jsonResponse);
     return jsonResponse;
   }
 
@@ -204,13 +204,13 @@ class ApiService {
     return response.json();
   }
 
-  // NotebookLM Audio Generation
-  async generateNotebookLMAudio({ custom_text }) {
+  // Advanced Audio Generation
+  async generateAdvancedAudio({ custom_text }) {
     if (!custom_text || !custom_text.trim()) {
       throw new Error('Custom text is required');
     }
     
-    const response = await this.request('/api/notebooklm/generate', {
+    const response = await this.request('/api/audio-generation/generate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -223,6 +223,12 @@ class ApiService {
   // API info
   async getApiInfo() {
     const response = await this.request('/');
+    return response.json();
+  }
+
+  // FoxAI Company Information
+  async getFoxAIInfo() {
+    const response = await this.request('/api/foxai/info');
     return response.json();
   }
 

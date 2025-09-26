@@ -1,0 +1,40 @@
+.typingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 0.5rem 0;
+}
+
+.typingText {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #374151;
+  text-align: center;
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.4;
+}
+
+.cursor {
+  color: #3b82f6;
+  font-weight: bold;
+  margin-left: 2px;
+  animation: blink 1s infinite;
+}
+
+.cursor.visible {
+  opacity: 1;
+}
+
+.cursor.hidden {
+  opacity: 0;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}

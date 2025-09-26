@@ -126,17 +126,17 @@ class NotebookLMAutomation:
             )
 
             if login_success:
-                print("✅ Google login successful")
+                print("Google login successful")
                 # Navigate back to NotebookLM after login
                 page.goto(settings.notebooklm.navigation_url)
                 page.wait_for_timeout(3000)
             else:
-                print("❌ Google login failed")
+                print("Google login failed")
 
             return login_success
 
         except Exception as e:
-            print(f"❌ Login error: {e}")
+            print(f"Login error: {e}")
             return False
 
     def get_content(self, content_source: str) -> Optional[str]:
@@ -144,10 +144,10 @@ class NotebookLMAutomation:
         print("📤 Processing content source...")
 
         if isinstance(content_source, str) and len(content_source.strip()) > 10:
-            print(f"✅ Using direct text content ({len(content_source)} chars)")
+            print(f"Using direct text content ({len(content_source)} chars)")
             return content_source.strip()
 
-        print(f"❌ Invalid content source (too short or not text): {content_source}")
+        print(f"Invalid content source (too short or not text): {content_source}")
         print("💡 Content must be at least 10 characters long")
         return None
 
@@ -161,7 +161,7 @@ class NotebookLMAutomation:
 
             # Handle login if needed
             if not self.handle_google_login(page):
-                print("❌ Login failed - cannot proceed")
+                print("Login failed - cannot proceed")
                 return False
 
             page.wait_for_timeout(2000)
@@ -183,13 +183,13 @@ class NotebookLMAutomation:
                     if btn.count() > 0:
                         btn.click()
                         create_clicked = True
-                        print(f"✅ Clicked create button with: {selector}")
+                        print(f"Clicked create button with: {selector}")
                         break
                 except:
                     continue
 
             if not create_clicked:
-                print("❌ Could not find Create new button")
+                print("Could not find Create new button")
                 return False
 
             page.wait_for_timeout(2000)
@@ -211,19 +211,19 @@ class NotebookLMAutomation:
                     if chip.count() > 0:
                         chip.click()
                         copied_clicked = True
-                        print(f"✅ Clicked copied text with: {selector}")
+                        print(f"Clicked copied text with: {selector}")
                         break
                 except:
                     continue
 
             if not copied_clicked:
-                print("❌ Could not find Copied text chip")
+                print("Could not find Copied text chip")
                 return False
 
             page.wait_for_timeout(2000)
 
             # Paste content
-            print(f"📝 Pasting {len(content)} chars...")
+            print(f"Pasting {len(content)} chars...")
             dialog = page.get_by_role("dialog").first
             dialog.locator("textarea").first.fill(content)
 
@@ -244,19 +244,19 @@ class NotebookLMAutomation:
                     if btn.count() > 0:
                         btn.click()
                         insert_clicked = True
-                        print(f"✅ Clicked insert with: {selector}")
+                        print(f"Clicked insert with: {selector}")
                         break
                 except:
                     continue
 
             if not insert_clicked:
-                print("❌ Could not find Insert button")
+                print("Could not find Insert button")
                 return False
             page.wait_for_timeout(1500)
             return True
 
         except Exception as e:
-            print(f"❌ Upload error: {e}")
+            print(f"Upload error: {e}")
             self.debug_page_state(page, "upload_error")
             return False
 
@@ -273,12 +273,12 @@ class NotebookLMAutomation:
             try:
                 audio_overview_btn = page.get_by_role("button", name="Audio Overview")
                 expect(audio_overview_btn).to_be_visible(timeout=5000)
-                print("✅ Found Audio Overview with get_by_role")
+                print("Found Audio Overview with get_by_role")
             except Exception:
                 try:
                     audio_overview_btn = page.get_by_role("button", name="Tổng quan âm thanh")
                     expect(audio_overview_btn).to_be_visible(timeout=3000)
-                    print("✅ Found Audio Overview with get_by_role (Vietnamese)")
+                    print("Found Audio Overview with get_by_role (Vietnamese)")
                 except Exception as e:
                     print(f"   get_by_role failed: {e}")
                     audio_overview_btn = None
@@ -288,12 +288,12 @@ class NotebookLMAutomation:
                 try:
                     audio_overview_btn = page.get_by_text("Audio Overview", exact=False)
                     expect(audio_overview_btn).to_be_visible(timeout=3000)
-                    print("✅ Found Audio Overview with get_by_text")
+                    print("Found Audio Overview with get_by_text")
                 except Exception:
                     try:
                         audio_overview_btn = page.get_by_text("Tổng quan âm thanh", exact=False)
                         expect(audio_overview_btn).to_be_visible(timeout=3000)
-                        print("✅ Found Audio Overview with get_by_text (Vietnamese)")
+                        print("Found Audio Overview with get_by_text (Vietnamese)")
                     except Exception as e:
                         print(f"   get_by_text failed: {e}")
                         audio_overview_btn = None
@@ -309,7 +309,7 @@ class NotebookLMAutomation:
                     try:
                         audio_overview_btn = page.locator(selector).first
                         expect(audio_overview_btn).to_be_visible(timeout=2000)
-                        print(f"✅ Found Audio Overview with: {selector}")
+                        print(f"Found Audio Overview with: {selector}")
                         break
                     except Exception:
                         continue
@@ -317,7 +317,7 @@ class NotebookLMAutomation:
                     audio_overview_btn = None
 
             if not audio_overview_btn:
-                print("❌ Audio Overview button not found")
+                print("Audio Overview button not found")
                 return False
 
             # Click Audio Overview button
@@ -544,11 +544,19 @@ class NotebookLMAutomation:
         # Execute download using best practices
         try:
             expect(dl_btn).to_be_enabled(timeout=5000)
-            with page.expect_download(timeout=20000) as dl_info:
+            with page.expect_download(timeout=30000) as dl_info:
                 dl_btn.click()
                 print("✅ Download button clicked")
 
-            print(f"✅ Download started: {dl_info.value.suggested_filename}")
+            download = dl_info.value
+            suggested_filename = download.suggested_filename
+            print(f"✅ Download started: {suggested_filename}")
+
+            # Wait for download to complete and save to our folder
+            download_path = os.path.join(self.download_folder, suggested_filename)
+            download.save_as(download_path)
+            print(f"✅ Download saved to: {download_path}")
+
             return True
         except Exception as e:
             print(f"❌ Download failed: {e}")
@@ -603,15 +611,21 @@ class NotebookLMAutomation:
             # Launch browser
             try:
                 print("Launching browser...")
-                with sync_playwright() as p:
-                    # Ensure profile path exists
-                    os.makedirs(self.profile_path, exist_ok=True)
+                print(f"Download folder: {self.download_folder}")
 
+                # Ensure both profile and download folders exist
+                os.makedirs(self.profile_path, exist_ok=True)
+                os.makedirs(self.download_folder, exist_ok=True)
+
+                with sync_playwright() as p:
+                    # Use persistent context to keep login state
+                    # downloads_path + --download-default-directory ensures correct download location
                     browser = p.chromium.launch_persistent_context(
                         user_data_dir=self.profile_path,
                         headless=settings.notebooklm.headless,
                         downloads_path=self.download_folder,
                         args=[
+                            f"--download-default-directory={self.download_folder}",
                             "--disable-blink-features=AutomationControlled",
                             "--disable-infobars",
                             "--disable-extensions",
@@ -619,6 +633,9 @@ class NotebookLMAutomation:
                             "--disable-dev-shm-usage",
                             "--disable-web-security",
                             "--disable-features=VizDisplayCompositor",
+                            "--disable-prompt-on-repost",
+                            "--disable-background-downloads",
+                            "--disable-backgrounding-occluded-windows"
                         ],
                     )
 
