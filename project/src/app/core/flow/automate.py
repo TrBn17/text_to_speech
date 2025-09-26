@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Automation Flow Manager for Text-to-Speech System (NotebookLM)
-
-- Sửa lỗi tên hàm `generate_audio_overview`
-- Chuẩn hóa selector strings (tránh lồng "..." trong "...")
-- Bổ sung import còn thiếu
-- Kiểm tra Playwright bằng cách launch/close tạm thời
-- Dọn rác ở cuối file, loại bỏ các dòng thừa/duplicated debug
-"""
 
 import os
 import re
@@ -39,10 +29,6 @@ def _default_chrome_profile() -> str:
     if sys.platform.startswith("win"):
         return os.path.join(
             home, "AppData", "Local", "Google", "Chrome", "User Data", "Default"
-        )
-    elif sys.platform == "darwin":
-        return os.path.join(
-            home, "Library", "Application Support", "Google", "Chrome", "Default"
         )
     else:
         # Linux
@@ -82,30 +68,36 @@ class NotebookLMAutomation:
         print(f"   Auto-login: {self.auto_login}")
         print(f"   Debug mode: {self.debug_mode}")
 
-    def debug_page_state(self, page, step_name: str) -> None:
-        """Debug helper to print current page state."""
-        if not self.debug_mode:
-            return
 
+    def perform_reload_and_try_download(self, page, elapsed_time) -> bool:
+        """Reload page and try download."""
         try:
-            print(f"\n🔍 Debug info for {step_name}:")
-            print(f"   Current URL: {page.url}")
-            print(f"   Page title: {page.title()}")
+            print("🔄 Reloading page...")
+            page.keyboard.press("Control+r")
+            page.wait_for_timeout(5000)
 
-            # Count modals and dialogs
-            modal_selector = 'div[role="dialog"], .mat-dialog-container'
-            modal_count = page.locator(modal_selector).count()
-            print(f"   Modals: {modal_count}")
+            # Activate page
+            try:
+                page.locator("body").click(timeout=2000)
+            except:
+                page.keyboard.press("Space")
 
-            print(f"   Textareas: {page.locator('textarea').count()}")
-            print(f"   Buttons: {page.locator('button').count()}")
-
-            screenshot_path = f"debug_{step_name}.png"
-            page.screenshot(path=screenshot_path)
-            print(f"   Screenshot: {screenshot_path}")
+            # Try download
+            method = "interactive" if elapsed_time < 600 else "more"
+            return self.try_download_method(page, method)
 
         except Exception as e:
-            print(f"⚠️ Debug error: {e}")
+            print(f"❌ Reload error: {e}")
+            return False
+
+    def debug_page_state(self, page, step_name: str) -> None:
+        """Debug helper."""
+        if self.debug_mode:
+            try:
+                print(f"🔍 Debug {step_name}: {page.url}")
+                page.screenshot(path=f"debug_{step_name}.png")
+            except Exception as e:
+                print(f"⚠️ Debug error: {e}")
 
     def handle_google_login(self, page) -> bool:
         """Handle Google login if credentials are provided."""
@@ -172,48 +164,93 @@ class NotebookLMAutomation:
 
             page.wait_for_timeout(2000)
 
-            # Create new notebook
-            print("📋 Creating new notebook...")
-            create_btn = page.get_by_text(re.compile(r"(Create\s*new|Tạo\s*mới)", re.IGNORECASE))
-            create_btn.wait_for(timeout=settings.notebooklm.timeout)
-            create_btn.click()
-            print("✅ Create new notebook button clicked")
-            page.wait_for_timeout(2000)
-            self.debug_page_state(page, "after_create_notebook")
+            # Create new
+            print("📋 Creating new...")
+            # Try both English and Vietnamese
+            create_selectors = [
+                'text="Create new"',
+                'text="Tạo mới"',
+                '[aria-label="Create new"]',
+                '[aria-label="Tạo mới"]'
+            ]
 
-            # Click "Copied text" chip using stable attributes
+            create_clicked = False
+            for selector in create_selectors:
+                try:
+                    btn = page.locator(selector).first
+                    if btn.count() > 0:
+                        btn.click()
+                        create_clicked = True
+                        print(f"✅ Clicked create button with: {selector}")
+                        break
+                except:
+                    continue
+
+            if not create_clicked:
+                print("❌ Could not find Create new button")
+                return False
+
+            page.wait_for_timeout(2000)
+
+            # Click "Copied text"
             print("📎 Adding copied text...")
-            copied_text_chip = page.locator(
-                'mat-chip[appearance="hairline-assistive"]'
-            ).filter(
-                has_text=re.compile(
-                    r"(copied\s*text|văn\s*bản.*sao\s*chép)", re.IGNORECASE
-                )
-            ).first
-            copied_text_chip.scroll_into_view_if_needed()
-            copied_text_chip.wait_for(state="visible", timeout=settings.notebooklm.timeout)
-            copied_text_chip.click()
-            print("✅ Copied text chip clicked")
+            copied_selectors = [
+                'text="Copied text"',
+                'text="Văn bản đã sao chép"',
+                'mat-chip:has-text("Copied text")',
+                'mat-chip:has-text("Văn bản")',
+                'mat-chip:has-text("văn bản")'
+            ]
+
+            copied_clicked = False
+            for selector in copied_selectors:
+                try:
+                    chip = page.locator(selector).first
+                    if chip.count() > 0:
+                        chip.click()
+                        copied_clicked = True
+                        print(f"✅ Clicked copied text with: {selector}")
+                        break
+                except:
+                    continue
+
+            if not copied_clicked:
+                print("❌ Could not find Copied text chip")
+                return False
+
             page.wait_for_timeout(2000)
-            self.debug_page_state(page, "after_copied_text_click")
 
-            # Textarea trong dialog
-            print("📝 Pasting content...")
+            # Paste content
+            print(f"📝 Pasting {len(content)} chars...")
             dialog = page.get_by_role("dialog").first
-            paste_area = dialog.locator("textarea[matinput], textarea[placeholder]").first
-            paste_area.wait_for(state="visible", timeout=settings.notebooklm.timeout)
-            paste_area.fill(content)
-            print(f"Pasted {len(content)} characters")
+            dialog.locator("textarea").first.fill(content)
 
-            # Click Insert
-            print("🔘 Inserting content...")
-            insert_btn = dialog.get_by_text(re.compile(r"(Insert|Chèn)", re.IGNORECASE))
-            insert_btn.wait_for(timeout=settings.notebooklm.timeout)
-            insert_btn.click()
-            print("✅ Insert button clicked")
+            # Insert
+            insert_selectors = [
+                'text="Insert"',
+                'text="Chèn"',
+                'text="Thêm"',
+                'button:has-text("Insert")',
+                'button:has-text("Chèn")',
+                'button:has-text("Thêm")'
+            ]
 
+            insert_clicked = False
+            for selector in insert_selectors:
+                try:
+                    btn = page.locator(selector).first
+                    if btn.count() > 0:
+                        btn.click()
+                        insert_clicked = True
+                        print(f"✅ Clicked insert with: {selector}")
+                        break
+                except:
+                    continue
+
+            if not insert_clicked:
+                print("❌ Could not find Insert button")
+                return False
             page.wait_for_timeout(1500)
-            self.debug_page_state(page, "after_insert")
             return True
 
         except Exception as e:
@@ -227,11 +264,16 @@ class NotebookLMAutomation:
             print("🎵 Generating Audio Overview...")
             print("🔍 Looking for Audio Overview button...")
 
-            # Look for Audio Overview button with specific structure
+            # Look for Audio Overview button (English and Vietnamese)
             audio_overview_selectors = [
-                'button span.mdc-button__label:has-text("Audio Overview")',
-                'span.mdc-button__label:has-text("Audio Overview")',
-                'button:has-text("Audio Overview")'
+                'text="Audio Overview"',
+                'text="Tổng quan âm thanh"',
+                'text="Bản tổng quan âm thanh"',
+                'button:has-text("Audio Overview")',
+                'button:has-text("Tổng quan âm thanh")',
+                'button:has-text("tổng quan")',
+                'span:has-text("Audio Overview")',
+                'span:has-text("Tổng quan")'
             ]
 
             audio_overview_btn = None
@@ -264,13 +306,18 @@ class NotebookLMAutomation:
 
             self.debug_page_state(page, "after_audio_overview_click")
 
-            # Check for daily limits
-            daily_limit_message = page.locator(
-                "text=You have reached your daily Audio Overview limits"
-            )
-            if daily_limit_message.count() > 0:
-                print("❌ Daily Audio Overview limits reached!")
-                return False
+            # Check for daily limits (English and Vietnamese)
+            daily_limit_selectors = [
+                "text=You have reached your daily Audio Overview limits",
+                "text=Bạn đã đạt giới hạn",
+                "text=đã đạt giới hạn",
+                "text=giới hạn hàng ngày"
+            ]
+
+            for selector in daily_limit_selectors:
+                if page.locator(selector).count() > 0:
+                    print("❌ Daily limits reached!")
+                    return False
 
             print("✅ Audio generation initiated")
             return True
@@ -280,360 +327,162 @@ class NotebookLMAutomation:
             return False
 
     def wait_for_audio_completion(self, page, max_wait_minutes: int = 15) -> bool:
-        """Wait for audio generation to complete."""
-        print("⏳ Waiting for audio generation...")
-        print(f"   Maximum wait time: {max_wait_minutes} minutes")
-        print("   Audio typically takes 5-15 minutes to generate")
-
-        # MANDATORY 3-minute minimum wait before checking completion
-        min_wait_time = 3 * 60  # 3 minutes
-        print("   🕒 Minimum wait time: 3 minutes (audio needs time to start)")
+        """Simplified wait with reload + download retry."""
+        print(f"⏳ Waiting for audio (max {max_wait_minutes} min)...")
 
         max_wait_time = max_wait_minutes * 60
-        check_interval = 30  # seconds
         elapsed_time = 0
+        last_reload = 0
+        last_download = 0
 
-        # Phase 1: Minimum wait (3 minutes) - Don't check for completion yet
-        print("📝 Phase 1: Initial wait (3 minutes minimum)...")
-        last_reload_time = 0
-        reload_interval = 4 * 60  # 4 minutes
-        print(
-            f"⏰ Auto-reload will trigger every {reload_interval//60} minutes to prevent lag"
-        )
-
-        while elapsed_time < min_wait_time:
-            print(
-                f"   ⏰ Initial wait... ({elapsed_time//60}:{elapsed_time%60:02d}/3:00) - Not checking completion yet"
-            )
-
-            # Auto-reload every 4 minutes to prevent lag
-            time_since_last_reload = elapsed_time - last_reload_time
-            if time_since_last_reload >= reload_interval and elapsed_time > 0:
-                print(
-                    f"🔄 AUTO-RELOAD TRIGGERED at {elapsed_time//60}:{elapsed_time%60:02d}"
-                )
-                print(
-                    f"   Time since last reload: {time_since_last_reload//60}:{time_since_last_reload%60:02d}"
-                )
-                print(
-                    f"   Reload interval: {reload_interval//60}:{reload_interval%60:02d}"
-                )
-
-                try:
-                    current_url = page.url
-                    print(f"   📍 Current URL: {current_url}")
-
-                    # Try multiple reload methods
-                    print("   🔄 Method 1: Ctrl+R...")
-                    page.keyboard.press("Control+r")
-
-                    print("   ⏳ Waiting 3 seconds for initial reload response...")
-                    page.wait_for_timeout(3000)
-
-                    # Alternative method if first doesn't work
-                    print("   🔄 Method 2: page.reload() as backup...")
-                    try:
-                        page.reload(wait_until="load", timeout=10000)
-                        print("   ✅ page.reload() successful")
-                    except Exception as reload_error:
-                        print(f"   ⚠️ page.reload() failed: {reload_error}")
-
-                    print("   ⏳ Final wait 5 seconds...")
-                    page.wait_for_timeout(5000)
-
-                    new_url = page.url
-                    print(f"   📍 URL after reload: {new_url}")
-
-                    last_reload_time = elapsed_time
-                    print(
-                        f"✅ AUTO-RELOAD COMPLETED at {elapsed_time//60}:{elapsed_time%60:02d}"
-                    )
-                    print(
-                        "   Next reload scheduled for: "
-                        f"{(elapsed_time + reload_interval)//60}:"
-                        f"{(elapsed_time + reload_interval)%60:02d}"
-                    )
-
-                except Exception as e:
-                    print(f"❌ RELOAD ERROR: {e}")
-                    print(f"   Error type: {type(e).__name__}")
-                    last_reload_time = elapsed_time
-                    print("   ⚠️ Will continue without reload, next attempt in 4 minutes")
-
-            try:
-                page.wait_for_timeout(check_interval * 1000)
-                elapsed_time += check_interval
-            except Exception:
-                print("❌ Page unavailable during initial wait")
-                return False
-
-        print("✅ Minimum 3-minute wait completed. Now checking for audio completion...")
-
-        # Phase 2: Active checking for completion
         while elapsed_time < max_wait_time:
-            try:
-                if page.is_closed():
-                    print("❌ Page closed, stopping wait")
-                    break
+            # Auto-reload every 4 minutes
+            if elapsed_time - last_reload >= 240 and elapsed_time > 0:
+                if self.perform_reload_and_try_download(page, elapsed_time):
+                    return True
+                last_reload = elapsed_time
 
-                print(
-                    "📝 Phase 2: Checking for completion... "
-                    f"({elapsed_time//60}:{elapsed_time%60:02d}/{max_wait_minutes}:00)"
-                )
-
-                # Auto-reload every 4 minutes to prevent lag
-                time_since_last_reload = elapsed_time - last_reload_time
-                if time_since_last_reload >= reload_interval:
-                    print(
-                        f"🔄 AUTO-RELOAD TRIGGERED at {elapsed_time//60}:{elapsed_time%60:02d}"
-                    )
-                    print(
-                        "   Time since last reload: "
-                        f"{time_since_last_reload//60}:{time_since_last_reload%60:02d}"
-                    )
-
-                    try:
-                        current_url = page.url
-                        print(f"   📍 Current URL: {current_url}")
-
-                        # Try multiple reload methods
-                        print("   🔄 Method 1: Ctrl+R...")
-                        page.keyboard.press("Control+r")
-
-                        print("   ⏳ Waiting 3 seconds for initial reload response...")
-                        page.wait_for_timeout(3000)
-
-                        print("   🔄 Method 2: page.reload() as backup...")
-                        try:
-                            page.reload(wait_until="load", timeout=10000)
-                            print("   ✅ page.reload() successful")
-                        except Exception as reload_error:
-                            print(f"   ⚠️ page.reload() failed: {reload_error}")
-
-                        print("   ⏳ Final wait 5 seconds...")
-                        page.wait_for_timeout(5000)
-
-                        new_url = page.url
-                        print(f"   📍 URL after reload: {new_url}")
-
-                        last_reload_time = elapsed_time
-                        print(
-                            f"✅ AUTO-RELOAD COMPLETED at {elapsed_time//60}:{elapsed_time%60:02d}"
-                        )
-                        print(
-                            "   Next reload scheduled for: "
-                            f"{(elapsed_time + reload_interval)//60}:"
-                            f"{(elapsed_time + reload_interval)%60:02d}"
-                        )
-
-                    except Exception as e:
-                        print(f"❌ RELOAD ERROR: {e}")
-                        print(f"   Error type: {type(e).__name__}")
-                        last_reload_time = elapsed_time
-                        print("   ⚠️ Will continue without reload, next attempt in 4 minutes")
-
-                # Check for generation in progress indicators first
-                generating_text = page.locator(":has-text('Generating')").count() > 0
-                come_back_text = page.locator(":has-text('Come back')").count() > 0
-                loading_elements = page.locator("[class*='loading']").count() > 0
-
-                generation_in_progress = (
-                    generating_text or come_back_text or loading_elements
-                )
-
-                if generation_in_progress:
-                    print(
-                        f"   🔄 Still generating... ({elapsed_time//60}:{elapsed_time%60:02d} elapsed)"
-                    )
-                else:
-                    # Look for completed audio files with more specific selectors
-                    audio_completion_indicators = [
-                        "button:has-text('Interactive')",
-                        "div:has-text('Digital Fossil')",
-                        "div:has-text('Deep Dive')",
-                        "div:has-text('Overview')",
-                        "[class*='audio-player']",
-                        "[class*='generated']",
-                        "div:has-text('minute')",
-                        "div:has-text('hosts')",
-                    ]
-
-                    for selector in audio_completion_indicators:
-                        try:
-                            elements = page.locator(selector)
-                            count = elements.count()
-                            if count > 0:
-                                # Double-check by waiting a bit more to ensure it's really there
-                                page.wait_for_timeout(2000)
-                                recheck_count = page.locator(selector).count()
-                                if recheck_count > 0:
-                                    print(
-                                        f"✅ Audio completed after {elapsed_time//60}:{elapsed_time%60:02d}"
-                                    )
-                                    print(
-                                        f"   Found reliable audio indicator: {selector} (count: {recheck_count})"
-                                    )
-                                    return True
-                        except Exception as e:
-                            print(f"   ⚠️ Error checking {selector}: {e}")
-                            continue
-
-                    # Final check: If no "Generating" text and we're past minimum time
-                    generation_indicators = page.locator(":has-text('Generating')").count()
-                    if generation_indicators == 0 and elapsed_time >= min_wait_time:
-                        print(
-                            f"⚠️ Generation indicator disappeared after {elapsed_time//60}:{elapsed_time%60:02d}"
-                        )
-                        print("   Assuming completion - but may need manual verification")
-
-            except Exception as e:
-                print(f"⚠️ Wait error: {e}")
-                # Don't break on errors, continue waiting
-                pass
-
-            print(
-                f"   ⏰ Still waiting... ({elapsed_time//60}:{elapsed_time%60:02d}/{max_wait_minutes}:00)"
-            )
-            try:
-                page.wait_for_timeout(check_interval * 1000)
-                elapsed_time += check_interval
-            except Exception:
-                print("❌ Page unavailable")
-                break
-
-        print(f"❌ Audio generation timeout after {max_wait_minutes} minutes")
-        return False
-
-    def download_audio(self, page) -> bool:
-        """Attempt to download generated audio using new menu approach."""
-        try:
-            print("🎵 Looking for generated audio to download...")
-
-            # Wait a bit to ensure audio is fully loaded
-            print("⏳ Ensuring audio is fully loaded...")
-            page.wait_for_timeout(5000)
-
-            # Click on audio file first
-            audio_found = False
-            audio_selectors = [
-                "div:has-text('Digital Fossil')",
-                "div:has-text('Deep Dive')",
-                "div:has-text('hosts')",
-                "[class*='audio']",
+            # Check if generating (English and Vietnamese)
+            generating_selectors = [
+                ":has-text('Generating')",
+                ":has-text('Đang tạo')",
+                ":has-text('Đang xử lý')",
+                ":has-text('Processing')"
             ]
 
-            print("🔍 Looking for audio file to select...")
-            for selector in audio_selectors:
-                try:
-                    print(f"   Trying audio selector: {selector}")
-                    audio_file = page.locator(selector).first
-                    count = audio_file.count()
-                    print(f"   Found {count} elements")
+            is_generating = any(page.locator(sel).count() > 0 for sel in generating_selectors)
+            if is_generating:
+                print(f"   🔄 Still generating... ({elapsed_time//60}:{elapsed_time%60:02d})")
+            else:
+                # Check if audio ready (English and Vietnamese)
+                audio_selectors = [
+                    "button:has-text('Interactive')",
+                    "button:has-text('Tương tác')",
+                    "div:has-text('Digital Fossil')",
+                    "div:has-text('Deep Dive')",
+                    "div:has-text('Hoá thạch số')",
+                    "div:has-text('Đào sâu')",
+                    "div:has-text('phút')",
+                    "div:has-text('minute')"
+                ]
+                audio_found = any(page.locator(sel).count() > 0 for sel in audio_selectors)
 
-                    if count > 0:
-                        audio_file.wait_for(timeout=5000)
-                        if audio_file.is_visible():
-                            audio_file.click()
-                            print(f"✅ Selected audio file with: {selector}")
-                            audio_found = True
-                            break
-                        else:
-                            print(f"   Element not visible: {selector}")
-                except Exception as e:
-                    print(f"   ❌ Failed with {selector}: {e}")
-                    continue
+                if audio_found and elapsed_time - last_download >= 15:
+                    method = "interactive" if elapsed_time < 600 else "more"  # 10 min cutoff
+                    if self.try_download_method(page, method):
+                        return True
+                    last_download = elapsed_time
 
-            if not audio_found:
-                print("⚠️ No audio file found to select")
+            page.wait_for_timeout(30000)  # 30 sec intervals
+            elapsed_time += 30
 
+        print(f"❌ Timeout after {max_wait_minutes} minutes")
+        return False
+
+    def find_element(self, page, selectors: list, description: str):
+        """Generic element finder with multiple selectors."""
+        for selector in selectors:
+            try:
+                candidate = page.locator(selector).first
+                if candidate.count() > 0:
+                    candidate.wait_for(state="visible", timeout=5000)
+                    return candidate
+            except:
+                continue
+        return None
+
+    def try_download_method(self, page, method: str) -> bool:
+        """Try different download methods - Interactive or More menu."""
+        page.wait_for_timeout(3000)
+
+        if method == "interactive":
+            print("👋 Trying Interactive mode...")
+            # Find Interactive button
+            interactive_selectors = [
+                'button:has-text("Interactive")',
+                'button:has-text("Tương tác")',
+                'button[aria-label*="Interactive"]',
+                'button[aria-label*="Tương tác"]',
+                'button:has(mat-icon:text("waving_hand"))'
+            ]
+            btn = self.find_element(page, interactive_selectors, "Interactive button")
+            if not btn:
+                return False
+
+            btn.scroll_into_view_if_needed()
+            btn.click()
+            page.wait_for_timeout(3000)
+
+            # Find download button
+            download_selectors = [
+                'a:has-text("Download")',
+                'a:has-text("Tải xuống")',
+                'a[aria-label*="Download"]',
+                'a[aria-label*="Tải xuống"]',
+                'a[href*="googleusercontent.com"][download]',
+                'button:has(mat-icon:text("download"))'
+            ]
+            dl_btn = self.find_element(page, download_selectors, "Download button")
+            if not dl_btn:
+                return False
+
+        else:  # More menu method
+            print("📋 Trying More menu...")
+            # Find artifact
+            artifact_selectors = ['section, div']
+            artifact = page.locator(artifact_selectors[0]).filter(
+                has_text=re.compile(r"(Deep Dive|Digital Fossil|hosts|Overview)", re.IGNORECASE)
+            ).first
+            if artifact.count() == 0:
+                return False
+
+            # Find More button
+            more_selectors = [
+                'button:has-text("More")',
+                'button:has-text("Thêm")',
+                'button[aria-label*="More"]',
+                'button[aria-label*="Thêm"]',
+                'button:has(mat-icon:text("more_vert"))'
+            ]
+            more_btn = self.find_element(artifact, more_selectors, "More button")
+            if not more_btn:
+                return False
+
+            more_btn.click()
             page.wait_for_timeout(2000)
 
-            # Click the more_vert (3-dot menu) button using specific attributes
-            print("📋 Looking for more_vert menu button...")
-            try:
-                more_vert_selectors = [
-                    'button[type="button"][data-mat-icon-type="font"] mat-icon:has-text("more_vert")',
-                    'button.mat-icon-button[aria-label="More"] mat-icon:has-text("more_vert")',
-                    'button[mattooltip="More"] mat-icon.google-symbols:has-text("more_vert")',
-                    'mat-icon.mat-icon-no-color.google-symbols:has-text("more_vert")',
-                    'mat-icon[data-mat-icon-type="font"]:has-text("more_vert")',
-                ]
-
-                menu_clicked = False
-                for selector in more_vert_selectors:
-                    try:
-                        print(f"   Trying more_vert selector: {selector}")
-                        more_btn = page.locator(selector)
-                        count = more_btn.count()
-                        print(f"   Found {count} more_vert buttons")
-
-                        if count > 0:
-                            more_btn.first.wait_for(timeout=8000)
-                            if more_btn.first.is_visible():
-                                more_btn.first.click()
-                                print(f"✅ Clicked more_vert menu with: {selector}")
-                                menu_clicked = True
-                                break
-                    except Exception as e:
-                        print(f"   ❌ Failed more_vert with {selector}: {e}")
-                        continue
-
-                if not menu_clicked:
-                    print("❌ Could not find or click more_vert menu button")
-                    return False
-
-                # Wait for menu to appear
-                page.wait_for_timeout(2000)
-
-            except Exception as e:
-                print(f"❌ Error clicking more_vert menu: {e}")
+            # Find download menu item
+            menu_selectors = [
+                'button[role="menuitem"]:has-text("Download")',
+                'button[role="menuitem"]:has-text("Tải xuống")',
+                '[role="menuitem"]:has-text("Download")',
+                '[role="menuitem"]:has-text("Tải xuống")',
+                'text="Download"',
+                'text="Tải xuống"'
+            ]
+            dl_btn = self.find_element(page, menu_selectors, "Download menu item")
+            if not dl_btn:
                 return False
 
-            # Click Download from the menu using HTML source structure
-            print("⬇️ Clicking Download from menu...")
-            try:
-                download_selectors = [
-                    'button.mat-mdc-menu-item[role="menuitem"] span.mat-mdc-menu-item-text:has-text("Download")',
-                    'button[role="menuitem"][tabindex="0"] span:has-text("Download")',
-                    '.mat-mdc-menu-item.mat-focus-indicator span.mat-mdc-menu-item-text:has-text("Download")',
-                    'button.mat-mdc-menu-item span:has-text("Download")',
-                    'span.mat-mdc-menu-item-text:has-text("Download")',
-                ]
-
-                download_clicked = False
-                for selector in download_selectors:
-                    try:
-                        print(f"   Trying download selector: {selector}")
-                        download_btn = page.locator(selector)
-                        count = download_btn.count()
-                        print(f"   Found {count} Download menu items")
-
-                        if count > 0:
-                            download_btn.first.wait_for(timeout=8000)
-                            if download_btn.first.is_visible():
-                                download_btn.first.click()
-                                print(f"✅ Clicked Download menu item with: {selector}")
-                                download_clicked = True
-                                break
-                    except Exception as e:
-                        print(f"   ❌ Failed Download with {selector}: {e}")
-                        continue
-
-                if download_clicked:
-                    print("✅ Download initiated successfully")
-                    page.wait_for_timeout(3000)
-                    return True
-                else:
-                    print("❌ Could not find or click Download menu item")
-                    return False
-
-            except Exception as e:
-                print(f"❌ Download error: {e}")
-                return False
-
+        # Execute download
+        try:
+            with page.expect_download(timeout=15000) as dl_info:
+                dl_btn.click()
+            print(f"✅ Download started: {dl_info.value.suggested_filename}")
+            return True
         except Exception as e:
-            print(f"Audio download error: {e}")
+            print(f"❌ Download failed: {e}")
             return False
+
+    def download_audio(self, page) -> bool:
+        """Simplified download with dual strategy."""
+        page.wait_for_timeout(5000)
+
+        # Try Interactive first, then More menu
+        for method in ["interactive", "more"]:
+            if self.try_download_method(page, method):
+                return True
+        return False
 
     def check_playwright_installation(self) -> bool:
         """Check if Playwright is properly installed by launching a temp browser."""
